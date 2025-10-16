@@ -1,5 +1,11 @@
+# air temp build dir
 tmp
+
+# local env vars
 .env
+
+# sqlite databases
+*.db
 
 # ======================================================
 
