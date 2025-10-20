@@ -1,11 +1,11 @@
 -- +goose Up
 -- +goose StatementBegin
 create table expenses (
-    expenses_id integer primary key,
+    id integer primary key,
 
     -- time is stored as unix time
-    expense_created_at integer,
-    expense_occured_at integer,
+    created_at integer,
+    occured_at integer,
 
     description text,
 
