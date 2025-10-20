@@ -3,7 +3,7 @@
 create table expenses (
     id integer primary key,
 
-    -- time is stored as unix time
+    -- time is stored as unix time with **only** second precision
     created_at integer,
     occured_at integer,
 
