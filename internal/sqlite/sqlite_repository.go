@@ -4,6 +4,7 @@ package sqlite
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"time"
 
 	"github.com/nicholasss/expense-tracker-api/internal/expenses"
@@ -92,7 +93,14 @@ func (r *SqliteRepository) GetAll(ctx context.Context) ([]*expenses.Expense, err
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+
+	// deferred but still checking error
+	defer func() {
+		closeErr := rows.Close()
+		if err == nil && closeErr != nil {
+			err = fmt.Errorf("failed to close query rows: %w", closeErr)
+		}
+	}()
 
 	// get all rows from query
 	dbExpenses := make([]dbExpense, 0)
