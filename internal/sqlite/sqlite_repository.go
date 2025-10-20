@@ -24,7 +24,7 @@ type dbExpense struct {
 	CreatedAt   int64
 	OccuredAt   int64
 	Description string
-	Amount      int
+	Amount      int64
 }
 
 func toDBExpense(e *expenses.Expense) dbExpense {
