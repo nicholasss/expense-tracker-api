@@ -1,54 +1,34 @@
 package main
 
 import (
-	"context"
-	"fmt"
 	"log"
 	"net/http"
-	"time"
 
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/nicholasss/expense-tracker-api/config"
 	"github.com/nicholasss/expense-tracker-api/internal/expenses"
 	"github.com/nicholasss/expense-tracker-api/internal/sqlite"
+	"github.com/nicholasss/expense-tracker-api/routes"
 )
 
-func rootHandler(w http.ResponseWriter, r *http.Request) {
-	log.Printf("request processing...\n")
-	_, err := fmt.Fprintln(w, "hello")
-	if err != nil {
-		log.Fatal(err)
-	}
-}
+const ConfigPath = ".env"
 
 func main() {
-	conf, err := newConfig()
+	cfg, err := config.LoadConfig(ConfigPath)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Failed to load config: %v", err)
 	}
 
-	exp := &expenses.Expense{
-		Amount:           1499,
-		ExpenseOccuredAt: time.Now(),
-		Description:      "new coffee for moka pot maker",
-	}
+	repository := sqlite.NewSqliteRepository(cfg.DB)
+	service := expenses.NewService(repository)
 
-	repo := sqlite.NewSqliteRepository(conf.database)
-	exp, err = repo.Create(context.Background(), exp)
+	mux, err := routes.SetupRoutes(service)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Failed to setup routes: %v", err)
 	}
-
-	log.Printf("%+v\n", exp)
-
-	// setup new mux
-	mux := http.NewServeMux()
-
-	// root handler
-	mux.HandleFunc("/", rootHandler)
 
 	log.Printf("Starting server...\n")
-
-	err = http.ListenAndServe(conf.toAddr(), mux)
+	err = http.ListenAndServe(cfg.Address, mux)
 	if err != nil {
 		log.Fatal(err)
 	}
