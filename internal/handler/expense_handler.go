@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/nicholasss/expense-tracker-api/internal/expenses"
@@ -15,7 +16,9 @@ func NewExpanseHandler(service *expenses.Service) *ExpenseHandler {
 }
 
 func (h *ExpenseHandler) GetAllExpenses(w http.ResponseWriter, r *http.Request) {
+	log.Println("get all expenses not implemented yet")
 }
 
 func (h *ExpenseHandler) CreateExpense(w http.ResponseWriter, r *http.Request) {
+	log.Println("create expenses not implemented yet")
 }
