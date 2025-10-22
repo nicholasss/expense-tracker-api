@@ -3,13 +3,18 @@ package config
 
 import (
 	"database/sql"
-	"log"
 	"os"
 
 	"github.com/joho/godotenv"
 )
 
 const database string = "expense-tracker.db"
+
+type MissingVariableError struct{}
+
+func (e *MissingVariableError) Error() string {
+	return "missing required environmental variable(s)"
+}
 
 type Config struct {
 	// Network config
@@ -26,36 +31,36 @@ type Config struct {
 
 // LoadConfig will load given file path and setup the config
 func LoadConfig(filePath string) (*Config, error) {
-	if filePath != ".env" {
-		log.Println("only supports .env loading currently, json coming soon.")
-		return nil, nil
-	}
-
 	err := godotenv.Load(filePath)
 	if err != nil {
 		return nil, err
 	}
 
-	conf := Config{
-		LocalAddress: os.Getenv("LOCAL_ADDRESS"),
-		LocalPort:    os.Getenv("LOCAL_PORT"),
-		DBPath:       os.Getenv("DB_PATH"),
-		DBDriver:     os.Getenv("GOOSE_DRIVER"),
+	localAddress := os.Getenv("LOCAL_ADDRESS")
+	localPort := os.Getenv("LOCAL_PORT")
+	dbPath := os.Getenv("DB_PATH")
+	dbDriver := os.Getenv("GOOSE_DRIVER")
+
+	if localAddress == "" || localPort == "" || dbPath == "" || dbDriver == "" {
+		return nil, &MissingVariableError{}
 	}
 
-	db, err := sql.Open(conf.DBDriver, database)
+	db, err := sql.Open(dbDriver, database)
 	if err != nil {
 		return nil, err
 	}
 
-	// final configuation
-	conf.DB = db
-	conf.Address = conf.makeAddr()
+	conf := Config{
+		// network
+		LocalAddress: localAddress,
+		LocalPort:    localPort,
+		Address:      localAddress + ":" + localPort,
+
+		// database
+		DBPath:   dbPath,
+		DBDriver: dbDriver,
+		DB:       db,
+	}
 
 	return &conf, nil
-}
-
-// Address returns the hosting address of the server
-func (conf *Config) makeAddr() string {
-	return conf.LocalAddress + ":" + conf.LocalPort
 }
