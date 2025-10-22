@@ -86,6 +86,25 @@ func TestLoadConfig(t *testing.T) {
 			wantError:   &config.MissingVariableError{},
 			wantConfig:  nil,
 		},
+		{
+			name: "invalid-partial-config-load",
+			inputConfig: `# server vars
+      export LOCAL_ADDRESS="localhost"
+      export LOCAL_PORT="8080"
+      export DB_PATH="./expense-tracker.db"`,
+			expectError: true,
+			wantError:   &config.MissingVariableError{},
+			wantConfig:  nil,
+		},
+		{
+			name: "invalid-partial-config-load",
+			inputConfig: `# Goose vars
+      export GOOSE_DRIVER="sqlite3"
+      export GOOSE_DBSTRING="./../../expense-tracker.db"`,
+			expectError: true,
+			wantError:   &config.MissingVariableError{},
+			wantConfig:  nil,
+		},
 	}
 
 	// actual tests here
