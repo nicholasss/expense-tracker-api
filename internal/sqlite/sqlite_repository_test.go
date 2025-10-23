@@ -1,0 +1,195 @@
+package sqlite_test
+
+import (
+	"context"
+	"database/sql"
+	"errors"
+	"testing"
+	"time"
+
+	"github.com/nicholasss/expense-tracker-api/internal/expenses"
+	"github.com/nicholasss/expense-tracker-api/internal/sqlite"
+
+	_ "github.com/mattn/go-sqlite3"
+)
+
+func checkExpenseEquality(t *testing.T, got, want *expenses.Expense) {
+	t.Helper()
+
+	if got.ID != want.ID {
+		t.Errorf("expenses.ID does not match. got: %v, want: %v", got.ID, want.ID)
+	}
+	if got.ExpenseOccuredAt != want.ExpenseOccuredAt {
+		t.Errorf("expenses.ExpenseOccuredAt does not match. got: %v, want: %v", got.ExpenseOccuredAt, want.ExpenseOccuredAt)
+	}
+	if got.Description != want.Description {
+		t.Errorf("expenses.Description does not match. got: %v, want: %v", got.Description, want.Description)
+	}
+	if got.Amount != want.Amount {
+		t.Errorf("expenses.Amount does not match. got: %v, want: %v", got.Amount, want.Amount)
+	}
+
+	// not checking created at for now...
+}
+
+func setupTestDB(t *testing.T) *sql.DB {
+	// create the in memory
+	db, err := sql.Open("sqlite3", ":memory:")
+	if err != nil {
+		t.Fatalf("failed to setup in-memory sqlite database: %v", err)
+	}
+
+	// create the table
+	createQuery := `
+  CREATE TABLE
+    expenses (
+      id INTEGER PRIMARY KEY,
+      created_at INTEGER,
+      occured_at INTEGER,
+      description TEXT,
+      amount INTEGER
+    );`
+	_, err = db.Exec(createQuery)
+	if err != nil {
+		t.Fatalf("unable to create table: %v", err)
+	}
+
+	// insert data for testing
+	insertQuery := `
+  INSERT INTO
+    expenses
+      (
+        created_at,
+        occured_at,
+        description,
+        amount
+      )
+  VALUES
+    (
+      unixepoch(),
+      1761231600,
+      "new hairdryer",
+      11999
+    ),
+    (
+      unixepoch(),
+      1761148800,
+      "oat breakfast",
+      1399
+    ),
+    (
+      unixepoch(),
+      1761073200,
+      "cab to train station",
+      2700
+    ),
+    (
+      unixepoch(),
+      1761001200,
+      "late dinner with client",
+      6289
+    ),
+    (
+      unixepoch(),
+      1760882400,
+      "cab to lunch",
+      2560
+    ),
+    (
+      unixepoch(),
+      1760810400,
+      "new coffee machine for headquarters",
+      18988
+    );`
+
+	_, err = db.Exec(insertQuery)
+	if err != nil {
+		t.Fatalf("unable to insert test data: %v", err)
+	}
+
+	return db
+}
+
+func TestGetByID(t *testing.T) {
+	testTable := []struct {
+		name        string
+		inputID     int
+		expectError bool
+		wantError   error
+		wantRecord  *expenses.Expense
+	}{
+		{
+			name:        "valid-first-record-by-id",
+			inputID:     1,
+			expectError: false,
+			wantError:   nil,
+			wantRecord: &expenses.Expense{
+				ID:               1,
+				Amount:           11999,
+				ExpenseOccuredAt: time.Unix(1761231600, 0),
+				Description:      "new hairdryer",
+			},
+		},
+		{
+			name:        "valid-second-record-by-id",
+			inputID:     2,
+			expectError: false,
+			wantError:   nil,
+			wantRecord: &expenses.Expense{
+				ID:               2,
+				Amount:           1399,
+				ExpenseOccuredAt: time.Unix(1761148800, 0),
+				Description:      "oat breakfast",
+			},
+		},
+		{
+			name:        "invalid-bad-id",
+			inputID:     0,
+			expectError: true,
+			wantError:   sql.ErrNoRows,
+			wantRecord:  nil,
+		},
+		{
+			name:        "invalid-id-does-not-exist",
+			inputID:     18,
+			expectError: true,
+			wantError:   sql.ErrNoRows,
+			wantRecord:  nil,
+		},
+	}
+
+	for _, testCase := range testTable {
+		t.Run(testCase.name, func(t *testing.T) {
+			db := setupTestDB(t)
+			repo := sqlite.NewSqliteRepository(db)
+
+			// defer teardown
+			defer func() {
+				err := db.Close()
+				if err != nil {
+					t.Errorf("unable to close connection to in-memory sqlite database: %v", err)
+				}
+			}()
+
+			// calling the function
+			gotRecord, gotErr := repo.GetByID(context.Background(), testCase.inputID)
+
+			// checking if we expect an error
+			if (gotErr != nil) != testCase.expectError {
+				t.Errorf("GetByID(%q) got error: '%v', expected error: '%v'", testCase.inputID, gotErr, testCase.wantError)
+			}
+
+			// checking error type if its not nil
+			if gotErr != nil {
+				if !errors.Is(gotErr, testCase.wantError) {
+					t.Errorf("got error: %v, want error: %v", gotErr, testCase.wantError)
+				}
+			}
+
+			// checking result
+			if !testCase.expectError && gotRecord != nil {
+				checkExpenseEquality(t, gotRecord, testCase.wantRecord)
+			}
+		})
+	}
+}
