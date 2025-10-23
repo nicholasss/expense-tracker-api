@@ -33,6 +33,8 @@ func checkExpenseEquality(t *testing.T, got, want *expenses.Expense) {
 }
 
 func setupTestDB(t *testing.T) *sql.DB {
+	t.Helper()
+
 	// create the in memory
 	db, err := sql.Open("sqlite3", ":memory:")
 	if err != nil {
