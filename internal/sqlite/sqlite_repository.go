@@ -13,6 +13,9 @@ import (
 // TODO:
 // - How should this package handle teardown of the database?
 
+// ErrNilPointer is returned when a nil pointer dereference is avoided
+var ErrNilPointer = fmt.Errorf("input pointer cannot be nil")
+
 // QueryError for wrapping sql query errors
 type QueryError struct {
 	Query string
@@ -138,6 +141,10 @@ func (r *SqliteRepository) GetAll(ctx context.Context) ([]*expenses.Expense, err
 
 // Create creates a new expense and returns it with id and createdAt
 func (r *SqliteRepository) Create(ctx context.Context, exp *expenses.Expense) (*expenses.Expense, error) {
+	if exp == nil {
+		return nil, ErrNilPointer
+	}
+
 	insertDBE := toDBExpense(exp)
 
 	query := `
@@ -178,6 +185,10 @@ func (r *SqliteRepository) Create(ctx context.Context, exp *expenses.Expense) (*
 // Update performs a full update for occuredAt, description, and amount
 // It does not return the updated expense struct since id and createdAt do not change
 func (r *SqliteRepository) Update(ctx context.Context, exp *expenses.Expense) error {
+	if exp == nil {
+		return ErrNilPointer
+	}
+
 	insertDBE := toDBExpense(exp)
 
 	query := `

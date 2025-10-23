@@ -288,3 +288,91 @@ func TestGetAll(t *testing.T) {
 		})
 	}
 }
+
+func TestCreate(t *testing.T) {
+	// the in memory database is setup for each individual test case,
+	// so the newly created record will always be ID = 7
+
+	testTable := []struct {
+		name        string
+		inputRecord *expenses.Expense
+		expectError bool
+		wantError   error
+		wantRecord  *expenses.Expense
+	}{
+		{
+			name: "valid-first-full-record",
+			inputRecord: &expenses.Expense{
+				Amount:           229,
+				ExpenseOccuredAt: time.Unix(1761249149, 0),
+				Description:      "new altoids",
+			},
+			expectError: false,
+			wantError:   nil,
+			wantRecord: &expenses.Expense{
+				ID:               7,
+				Amount:           229,
+				ExpenseOccuredAt: time.Unix(1761249149, 0),
+				Description:      "new altoids",
+			},
+		},
+		{
+			name: "valid-second-full-record",
+			inputRecord: &expenses.Expense{
+				Amount:           3278900,
+				ExpenseOccuredAt: time.Unix(1761242999, 0),
+				Description:      "a brand new car",
+			},
+			expectError: false,
+			wantError:   nil,
+			wantRecord: &expenses.Expense{
+				ID:               7,
+				Amount:           3278900,
+				ExpenseOccuredAt: time.Unix(1761242999, 0),
+				Description:      "a brand new car",
+			},
+		},
+		{
+			name:        "invalid-nil-record",
+			inputRecord: nil,
+			expectError: true,
+			wantError:   sqlite.ErrNilPointer,
+			wantRecord:  nil,
+		},
+	}
+
+	for _, testCase := range testTable {
+		t.Run(testCase.name, func(t *testing.T) {
+			db := setupTestDB(t)
+			repo := sqlite.NewSqliteRepository(db)
+
+			// defer teardown
+			defer func() {
+				err := db.Close()
+				if err != nil {
+					t.Errorf("unable to close connection to in-memory sqlite database: %v", err)
+				}
+			}()
+
+			// call the function
+			gotRecord, gotErr := repo.Create(context.Background(), testCase.inputRecord)
+
+			// checking if we expect an error
+			if (gotErr != nil) != testCase.expectError {
+				t.Errorf("Create() got error: '%v', expected error: '%v'", gotErr, testCase.wantError)
+			}
+
+			// checking error type if its not nil
+			if gotErr != nil {
+				if !errors.Is(gotErr, testCase.wantError) {
+					t.Errorf("got error: %v, want error: %v", gotErr, testCase.wantError)
+				}
+			}
+
+			// checking result
+			if !testCase.expectError && gotRecord != nil {
+				checkExpenseEquality(t, gotRecord, testCase.wantRecord)
+			}
+		})
+	}
+}
