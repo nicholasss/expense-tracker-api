@@ -2,4 +2,4 @@
 
 # perform tests with '-race' flag and
 
-go test ./... -race
+go test ./... -race -cover
