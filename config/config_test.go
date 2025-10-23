@@ -1,6 +1,7 @@
 package config_test
 
 import (
+	"errors"
 	"os"
 	"testing"
 
@@ -197,6 +198,13 @@ func TestLoadConfig(t *testing.T) {
 			// check error
 			if (gotErr != nil) != testCase.expectError {
 				t.Errorf("LoadConfig(%q) with config: %v, got error: '%v', expected error: '%v'", tmpFile.Name(), testCase.inputConfig, gotErr, testCase.wantError)
+			}
+
+			// checking error type if its not nil
+			if gotErr != nil {
+				if !errors.Is(gotErr, testCase.wantError) {
+					t.Errorf("got error: %v, want error: %v", gotErr, testCase.wantError)
+				}
 			}
 
 			// check returned config
