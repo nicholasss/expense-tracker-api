@@ -23,7 +23,7 @@ type QueryError struct {
 func (e *QueryError) Error() string { return e.Query + ": " + e.Err.Error() }
 
 // Is is used for errors.Is(), right now with testing
-func (e *QueryError) Is(target error) bool { return target == sql.ErrNoRows }
+func (e *QueryError) Is(target error) bool { return target == e.Err }
 
 // dbExpense has time stored as unix seconds (not milli-)
 type dbExpense struct {
