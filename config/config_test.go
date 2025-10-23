@@ -80,6 +80,25 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
+			name: "valid-config-load",
+			inputConfig: `# server vars
+      export LOCAL_ADDRESS="localhost"
+      export LOCAL_PORT="8080"
+      export DB_PATH="./expense-tracker.db"
+
+      # Goose vars
+      export GOOSE_DRIVER="sqlite3"`,
+			expectError: false,
+			wantError:   nil,
+			wantConfig: &config.Config{
+				LocalAddress: "localhost",
+				LocalPort:    "8080",
+				Address:      "localhost:8080",
+				DBPath:       "./expense-tracker.db",
+				DBDriver:     "sqlite3",
+			},
+		},
+		{
 			name:        "invalid-empty-config-load",
 			inputConfig: ``,
 			expectError: true,
@@ -99,6 +118,45 @@ func TestLoadConfig(t *testing.T) {
 		{
 			name: "invalid-partial-config-load",
 			inputConfig: `# Goose vars
+      export GOOSE_DRIVER="sqlite3"
+      export GOOSE_DBSTRING="./../../expense-tracker.db"`,
+			expectError: true,
+			wantError:   &config.MissingVariableError{},
+			wantConfig:  nil,
+		},
+		{
+			name: "invalid-missing-one-config-load",
+			inputConfig: `# server vars
+      export LOCAL_PORT="8080"
+      export DB_PATH="./expense-tracker.db"
+
+      # Goose vars
+      export GOOSE_DRIVER="sqlite3"
+      export GOOSE_DBSTRING="./../../expense-tracker.db"`,
+			expectError: true,
+			wantError:   &config.MissingVariableError{},
+			wantConfig:  nil,
+		},
+		{
+			name: "invalid-missing-one-config-load",
+			inputConfig: `# server vars
+      export LOCAL_ADDRESS="localhost"
+      export DB_PATH="./expense-tracker.db"
+
+      # Goose vars
+      export GOOSE_DRIVER="sqlite3"
+      export GOOSE_DBSTRING="./../../expense-tracker.db"`,
+			expectError: true,
+			wantError:   &config.MissingVariableError{},
+			wantConfig:  nil,
+		},
+		{
+			name: "invalid-missing-one-config-load",
+			inputConfig: `# server vars
+      export LOCAL_ADDRESS="localhost"
+      export LOCAL_PORT="8080"
+
+      # Goose vars
       export GOOSE_DRIVER="sqlite3"
       export GOOSE_DBSTRING="./../../expense-tracker.db"`,
 			expectError: true,
