@@ -10,13 +10,20 @@ import (
 	"github.com/nicholasss/expense-tracker-api/internal/expenses"
 )
 
+// TODO:
+// - How should this package handle teardown of the database?
+
 // QueryError for wrapping sql query errors
 type QueryError struct {
 	Query string
 	Err   error
 }
 
+// Error implements the error interface
 func (e *QueryError) Error() string { return e.Query + ": " + e.Err.Error() }
+
+// Is is used for errors.Is(), right now with testing
+func (e *QueryError) Is(target error) bool { return target == sql.ErrNoRows }
 
 // dbExpense has time stored as unix seconds (not milli-)
 type dbExpense struct {
