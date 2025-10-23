@@ -193,3 +193,96 @@ func TestGetByID(t *testing.T) {
 		})
 	}
 }
+
+// TestGetAll does not test whether the database is empty
+func TestGetAll(t *testing.T) {
+	testTable := []struct {
+		name        string
+		expectError bool
+		wantError   error
+		wantRecords []*expenses.Expense
+	}{
+		{
+			name:        "valid-all-records",
+			expectError: false,
+			wantError:   nil,
+			wantRecords: []*expenses.Expense{
+				{
+					ID:               1,
+					Amount:           11999,
+					ExpenseOccuredAt: time.Unix(1761231600, 0),
+					Description:      "new hairdryer",
+				},
+				{
+					ID:               2,
+					Amount:           1399,
+					ExpenseOccuredAt: time.Unix(1761148800, 0),
+					Description:      "oat breakfast",
+				},
+				{
+					ID:               3,
+					Amount:           2700,
+					ExpenseOccuredAt: time.Unix(1761073200, 0),
+					Description:      "cab to train station",
+				},
+				{
+					ID:               4,
+					Amount:           6289,
+					ExpenseOccuredAt: time.Unix(1761001200, 0),
+					Description:      "late dinner with client",
+				},
+				{
+					ID:               5,
+					Amount:           2560,
+					ExpenseOccuredAt: time.Unix(1760882400, 0),
+					Description:      "cab to lunch",
+				},
+				{
+					ID:               6,
+					Amount:           18988,
+					ExpenseOccuredAt: time.Unix(1760810400, 0),
+					Description:      "new coffee machine for headquarters",
+				},
+			},
+		},
+	}
+
+	for _, testCase := range testTable {
+		t.Run(testCase.name, func(t *testing.T) {
+			db := setupTestDB(t)
+			repo := sqlite.NewSqliteRepository(db)
+
+			// defer teardown
+			defer func() {
+				err := db.Close()
+				if err != nil {
+					t.Errorf("unable to close connection to in-memory sqlite database: %v", err)
+				}
+			}()
+
+			// calling the function
+			gotRecords, gotErr := repo.GetAll(context.Background())
+
+			// checking if we expect an error
+			if (gotErr != nil) != testCase.expectError {
+				t.Errorf("GetAll() got error: '%v', expected error: '%v'", gotErr, testCase.wantError)
+			}
+
+			// checking error type if its not nil
+			if gotErr != nil {
+				if !errors.Is(gotErr, testCase.wantError) {
+					t.Errorf("got error: %v, want error: %v", gotErr, testCase.wantError)
+				}
+			}
+
+			// checking result
+			if !testCase.expectError && gotRecords != nil {
+				for i, gotRecord := range gotRecords {
+
+					t.Logf("Record %d mismatch", i+1)
+					checkExpenseEquality(t, gotRecord, testCase.wantRecords[i])
+				}
+			}
+		})
+	}
+}
