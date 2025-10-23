@@ -43,6 +43,7 @@ func unsetEnvVars(t *testing.T, keyList []string) {
 	}
 }
 
+// NOTE: any newly supported vars need to be added here for testing
 func TestLoadConfig(t *testing.T) {
 	envVarKeys := []string{
 		"LOCAL_ADDRESS",
@@ -193,11 +194,12 @@ func TestLoadConfig(t *testing.T) {
 			// call the function
 			gotConfig, gotErr := config.LoadConfig(tmpFile.Name())
 
+			// check error
 			if (gotErr != nil) != testCase.expectError {
 				t.Errorf("LoadConfig(%q) with config: %v, got error: '%v', expected error: '%v'", tmpFile.Name(), testCase.inputConfig, gotErr, testCase.wantError)
 			}
 
-			// safer comparison
+			// check returned config
 			if !testCase.expectError && gotConfig != nil {
 				checkConfigEquality(t, gotConfig, testCase.wantConfig)
 			}
