@@ -376,3 +376,25 @@ func TestCreate(t *testing.T) {
 		})
 	}
 }
+
+func TestUpdate(t *testing.T) {
+	testTable := []struct {
+		name        string
+		inputRecord *expenses.Expense
+		expectError bool
+		wantError   error
+	}{
+		{
+			name:        "valid-first-update",
+			inputRecord: &expenses.Expense{},
+			expectError: false,
+			wantError:   nil,
+		},
+	}
+
+	for _, testCase := range testTable {
+		t.Run(testCase.name, func(t *testing.T) {
+			// test here
+		})
+	}
+}
