@@ -385,16 +385,73 @@ func TestUpdate(t *testing.T) {
 		wantError   error
 	}{
 		{
-			name:        "valid-first-update",
-			inputRecord: &expenses.Expense{},
+			name: "valid-update-description",
+			inputRecord: &expenses.Expense{
+				ID:               2,
+				Amount:           1399,
+				ExpenseOccuredAt: time.Unix(1761148800, 0),
+				Description:      "oat breakfast and a coffee",
+			},
 			expectError: false,
 			wantError:   nil,
+		},
+		{
+			name: "valid-update-amount",
+			inputRecord: &expenses.Expense{
+				ID:               2,
+				Amount:           1849,
+				ExpenseOccuredAt: time.Unix(1761148800, 0),
+				Description:      "oat breakfast",
+			},
+			expectError: false,
+			wantError:   nil,
+		},
+		{
+			name: "valid-update-occured-at-time",
+			inputRecord: &expenses.Expense{
+				ID:               2,
+				Amount:           1399,
+				ExpenseOccuredAt: time.Unix(1761148600, 0),
+				Description:      "oat breakfast",
+			},
+			expectError: false,
+			wantError:   nil,
+		},
+		{
+			name:        "invalid-nil-record",
+			inputRecord: nil,
+			expectError: true,
+			wantError:   sqlite.ErrNilPointer,
 		},
 	}
 
 	for _, testCase := range testTable {
 		t.Run(testCase.name, func(t *testing.T) {
-			// test here
+			db := setupTestDB(t)
+			repo := sqlite.NewSqliteRepository(db)
+
+			// defer teardown
+			defer func() {
+				err := db.Close()
+				if err != nil {
+					t.Errorf("unable to close connection to in-memory sqlite database: %v", err)
+				}
+			}()
+
+			// call the function here
+			gotErr := repo.Update(context.Background(), testCase.inputRecord)
+
+			// checking if we expect an error
+			if (gotErr != nil) != testCase.expectError {
+				t.Errorf("Update() got error: '%v', expected error: '%v'", gotErr, testCase.wantError)
+			}
+
+			// checking error type if its not nil
+			if gotErr != nil {
+				if !errors.Is(gotErr, testCase.wantError) {
+					t.Errorf("got error: %v, want error: %v", gotErr, testCase.wantError)
+				}
+			}
 		})
 	}
 }
