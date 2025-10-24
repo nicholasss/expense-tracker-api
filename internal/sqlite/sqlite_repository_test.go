@@ -455,3 +455,61 @@ func TestUpdate(t *testing.T) {
 		})
 	}
 }
+
+func TestDelete(t *testing.T) {
+	testTable := []struct {
+		name        string
+		inputID     int
+		expectError bool
+		wantError   error
+	}{
+		{
+			name:        "valid-delete-first-record",
+			inputID:     1,
+			expectError: false,
+			wantError:   nil,
+		},
+		{
+			name:        "valid-delete-sixth-record",
+			inputID:     6,
+			expectError: false,
+			wantError:   nil,
+		},
+		{
+			name:        "invalid-delete-nonexistent-record",
+			inputID:     10,
+			expectError: true,
+			wantError:   sqlite.ErrNoRowsDeleted,
+		},
+	}
+
+	for _, testCase := range testTable {
+		t.Run(testCase.name, func(t *testing.T) {
+			db := setupTestDB(t)
+			repo := sqlite.NewSqliteRepository(db)
+
+			// defer teardown
+			defer func() {
+				err := db.Close()
+				if err != nil {
+					t.Errorf("unable to close connection to in-memory sqlite database: %v", err)
+				}
+			}()
+
+			// call the function here
+			gotErr := repo.Delete(context.Background(), testCase.inputID)
+
+			// checking if we expect an error
+			if (gotErr != nil) != testCase.expectError {
+				t.Errorf("Delete() got error: '%v', expected error: '%v'", gotErr, testCase.wantError)
+			}
+
+			// checking error type if its not nil
+			if gotErr != nil {
+				if !errors.Is(gotErr, testCase.wantError) {
+					t.Errorf("got error: %v, want error: %v", gotErr, testCase.wantError)
+				}
+			}
+		})
+	}
+}
