@@ -16,6 +16,9 @@ import (
 // ErrNilPointer is returned when a nil pointer dereference is avoided
 var ErrNilPointer = fmt.Errorf("input pointer cannot be nil")
 
+// ErrNoRowsDeleted is returned when a delete query does not affect any rows
+var ErrNoRowsDeleted = fmt.Errorf("no rows were deleted")
+
 // QueryError for wrapping sql query errors
 type QueryError struct {
 	Query string
@@ -218,9 +221,18 @@ func (r *SqliteRepository) Delete(ctx context.Context, id int) error {
   WHERE
     id = ?;`
 
-	_, err := r.db.ExecContext(ctx, query, id)
+	res, err := r.db.ExecContext(ctx, query, id)
 	if err != nil {
 		return err
+	}
+
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return ErrNoRowsDeleted
 	}
 
 	return nil
