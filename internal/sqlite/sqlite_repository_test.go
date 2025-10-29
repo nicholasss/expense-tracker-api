@@ -418,6 +418,17 @@ func TestUpdate(t *testing.T) {
 			wantError:   nil,
 		},
 		{
+			name: "invalid-nonexistent-id",
+			inputRecord: &expenses.Expense{
+				ID:               13,
+				Amount:           1399,
+				ExpenseOccuredAt: time.Unix(1761148600, 0),
+				Description:      "oat breakfast",
+			},
+			expectError: true,
+			wantError:   sqlite.ErrNoRowsUpdated,
+		},
+		{
 			name:        "invalid-nil-record",
 			inputRecord: nil,
 			expectError: true,
