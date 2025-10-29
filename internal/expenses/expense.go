@@ -3,6 +3,8 @@ package expenses
 import "time"
 
 // Expense is used for all expense types, except summaries
+//
+// ID & RecordCreatedAt is set in the repository layer
 type Expense struct {
 	ID               int       `json:"id"`          // id of the expense for db
 	Amount           int64     `json:"amount"`      // cents total
