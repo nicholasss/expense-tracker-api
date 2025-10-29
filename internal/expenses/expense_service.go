@@ -28,6 +28,34 @@ var (
 	ErrInvalidOccuredAtTime = fmt.Errorf("expense date needs to be after 1970")
 )
 
+// ErrInvalidID is used with validation step of GetExpenseByID()
+var ErrInvalidID = fmt.Errorf("id needs to be greater than 0")
+
+// checkDescription is to validate an expenses description
+func checkDescription(description string) error {
+	if description == "" {
+		return ErrInvalidDescription
+	}
+	return nil
+}
+
+// checkAmount is to validate an expenses amount
+func checkAmount(amount int64) error {
+	if amount <= 0 {
+		return ErrInvalidAmount
+	}
+	return nil
+}
+
+// checkOccuredAt is to validate an expenses occuredAt time
+func checkOccuredAt(occ time.Time) error {
+	unixEpoch := time.Unix(0, 0)
+	if !occ.After(unixEpoch) {
+		return ErrInvalidOccuredAtTime
+	}
+	return nil
+}
+
 // Service implements all of the underlying business logic.
 // Things such as expenses being positive and not zero, etc.
 type Service struct {
@@ -42,19 +70,18 @@ func NewService(repo Repository) *Service {
 
 func (s *Service) NewExpense(ctx context.Context, occuredAt time.Time, description string, amount int64) (*Expense, error) {
 	// check description
-	if description == "" {
-		return nil, ErrInvalidDescription
+	if err := checkDescription(description); err != nil {
+		return nil, err
 	}
 
 	// check amount
-	if amount <= 0 {
-		return nil, ErrInvalidAmount
+	if err := checkAmount(amount); err != nil {
+		return nil, err
 	}
 
 	// able to be unix time
-	unixEpoch := time.Unix(0, 0)
-	if !occuredAt.After(unixEpoch) {
-		return nil, ErrInvalidOccuredAtTime
+	if err := checkOccuredAt(occuredAt); err != nil {
+		return nil, err
 	}
 
 	exp := &Expense{
@@ -82,7 +109,7 @@ func (s *Service) GetAllExpenses(ctx context.Context) ([]*Expense, error) {
 
 func (s *Service) GetExpenseByID(ctx context.Context, id int) (*Expense, error) {
 	if id <= 0 {
-		return nil, fmt.Errorf("id needs to be greater than 0")
+		return nil, ErrInvalidID
 	}
 
 	exp, err := s.repo.GetByID(ctx, id)
@@ -95,23 +122,22 @@ func (s *Service) GetExpenseByID(ctx context.Context, id int) (*Expense, error) 
 
 func (s *Service) UpdateExpense(ctx context.Context, id int, occuredAt time.Time, description string, amount int64) error {
 	if id <= 0 {
-		return fmt.Errorf("id needs to be greater than 0")
+		return ErrInvalidID
 	}
 
 	// check description
-	if description == "" {
-		return fmt.Errorf("empty expense description")
+	if err := checkDescription(description); err != nil {
+		return err
 	}
 
 	// check amount
-	if amount <= 0 {
-		return fmt.Errorf("expense amount needs to be greater than 0")
+	if err := checkAmount(amount); err != nil {
+		return err
 	}
 
 	// able to be unix time
-	nineteenSeventy := time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC)
-	if occuredAt.Before(nineteenSeventy) {
-		return fmt.Errorf("expense date needs to be after 1970")
+	if err := checkOccuredAt(occuredAt); err != nil {
+		return err
 	}
 
 	exp := &Expense{
