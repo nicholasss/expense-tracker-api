@@ -21,6 +21,13 @@ const (
 	CustomYearMonthRange
 )
 
+// These errors are used in the validation step of NewExpense()
+var (
+	ErrInvalidDescription   = fmt.Errorf("expense description cannot be empty")
+	ErrInvalidAmount        = fmt.Errorf("expense amount needs to be greater than 0")
+	ErrInvalidOccuredAtTime = fmt.Errorf("expense date needs to be after 1970")
+)
+
 // Service implements all of the underlying business logic.
 // Things such as expenses being positive and not zero, etc.
 type Service struct {
@@ -36,18 +43,18 @@ func NewService(repo Repository) *Service {
 func (s *Service) NewExpense(ctx context.Context, occuredAt time.Time, description string, amount int64) (*Expense, error) {
 	// check description
 	if description == "" {
-		return nil, fmt.Errorf("empty expense description")
+		return nil, ErrInvalidDescription
 	}
 
 	// check amount
 	if amount <= 0 {
-		return nil, fmt.Errorf("expense amount needs to be greater than 0")
+		return nil, ErrInvalidAmount
 	}
 
 	// able to be unix time
-	nineteenSeventy := time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC)
-	if occuredAt.Before(nineteenSeventy) {
-		return nil, fmt.Errorf("expense date needs to be after 1970")
+	unixEpoch := time.Unix(0, 0)
+	if !occuredAt.After(unixEpoch) {
+		return nil, ErrInvalidOccuredAtTime
 	}
 
 	exp := &Expense{
