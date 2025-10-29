@@ -141,6 +141,7 @@ func (s *Service) UpdateExpense(ctx context.Context, id int, occuredAt time.Time
 	}
 
 	exp := &Expense{
+		ID:               id,
 		Amount:           amount,
 		ExpenseOccuredAt: occuredAt,
 		Description:      description,
