@@ -156,7 +156,7 @@ func (s *Service) UpdateExpense(ctx context.Context, id int, occuredAt time.Time
 
 func (s *Service) DeleteExpense(ctx context.Context, id int) error {
 	if id <= 0 {
-		return fmt.Errorf("id needs to be greater than 0")
+		return ErrInvalidID
 	}
 
 	if err := s.repo.Delete(ctx, id); err != nil {
