@@ -31,6 +31,19 @@ var (
 // ErrInvalidID is used with validation step of GetExpenseByID()
 var ErrInvalidID = fmt.Errorf("id needs to be greater than 0")
 
+// ErrInvalidTime is used for SummarizeExpenses() when an invalid range is provided
+type ErrInvalidTime struct {
+	ProvidedTime string
+	WrappedError error
+}
+
+func (e *ErrInvalidTime) Error() string {
+	if e.WrappedError != nil {
+		return fmt.Sprintf("invalid time range of '%s' due to: '%s'", e.ProvidedTime, e.WrappedError)
+	}
+	return fmt.Sprintf("invalid time range of '%s'", e.ProvidedTime)
+}
+
 // checkDescription is to validate an expenses description
 func checkDescription(description string) error {
 	if description == "" {
@@ -174,18 +187,26 @@ func isWrongMonth(timeA, timeB time.Time) bool {
 }
 
 func makeCustomMonth(str string) (time.Time, error) {
-	yearStr, monthStr, _ := strings.Cut(str, "-")
-
-	month, err := strconv.Atoi(monthStr)
-	if err != nil {
-		return time.Time{}, err
-	}
-	year, err := strconv.Atoi(yearStr)
-	if err != nil {
-		return time.Time{}, err
+	yearStr, monthStr, found := strings.Cut(str, "-")
+	if !found {
+		return time.Time{}, &ErrInvalidTime{ProvidedTime: str, WrappedError: nil}
 	}
 
-	customMonth := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
+	monthInt, err := strconv.Atoi(monthStr)
+	if err != nil {
+		return time.Time{}, &ErrInvalidTime{ProvidedTime: str, WrappedError: err}
+	}
+	yearInt, err := strconv.Atoi(yearStr)
+	if err != nil {
+		return time.Time{}, &ErrInvalidTime{ProvidedTime: str, WrappedError: err}
+	}
+
+	// perform explicit check for month before type casting to time.Month
+	if monthInt < 1 || monthInt > 12 {
+		return time.Time{}, &ErrInvalidTime{ProvidedTime: str, WrappedError: nil}
+	}
+
+	customMonth := time.Date(yearInt, time.Month(monthInt), 1, 0, 0, 0, 0, time.UTC)
 	return customMonth, nil
 }
 
@@ -197,12 +218,12 @@ func isWrongYear(timeA, timeB time.Time) bool {
 }
 
 func makeCustomYear(str string) (time.Time, error) {
-	year, err := strconv.Atoi(str)
+	yearInt, err := strconv.Atoi(str)
 	if err != nil {
-		return time.Time{}, err
+		return time.Time{}, &ErrInvalidTime{ProvidedTime: str, WrappedError: err}
 	}
 
-	customYear := time.Date(year, 1, 1, 0, 0, 0, 0, time.UTC)
+	customYear := time.Date(yearInt, 1, 0, 0, 0, 0, 0, time.UTC)
 	return customYear, nil
 }
 
