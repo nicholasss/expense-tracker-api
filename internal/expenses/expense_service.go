@@ -174,10 +174,7 @@ func isWrongMonth(timeA, timeB time.Time) bool {
 }
 
 func makeCustomMonth(str string) (time.Time, error) {
-	yearStr, monthStr, found := strings.Cut(str, "-")
-	if !found {
-		return time.Time{}, fmt.Errorf("could not parse custom month: %q", str)
-	}
+	yearStr, monthStr, _ := strings.Cut(str, "-")
 
 	month, err := strconv.Atoi(monthStr)
 	if err != nil {
