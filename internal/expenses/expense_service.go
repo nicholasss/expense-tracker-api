@@ -290,7 +290,9 @@ func (s *Service) SummarizeExpenses(ctx context.Context, kind SummaryTimeRange, 
 			return isWrongYear(exp.ExpenseOccuredAt, customYear)
 		})
 	case CustomYearMonthRange:
-		log.Println("custom range not implemented yet")
+		// TODO: implement CustomYearMonthRange
+		// "2023-09,2024-09", comma seperating out range begin and range end
+		log.Println("WARNING: custom range not implemented yet")
 	}
 
 	// add up expenses
