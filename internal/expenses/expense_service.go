@@ -207,6 +207,13 @@ func makeCustomMonth(str string) (time.Time, error) {
 	}
 
 	customMonth := time.Date(yearInt, time.Month(monthInt), 1, 0, 0, 0, 0, time.UTC)
+
+	// ensure its valid unix time
+	unixEpoch := time.Unix(0, 0)
+	if customMonth.Before(unixEpoch) {
+		return time.Time{}, &ErrInvalidTime{ProvidedTime: str}
+	}
+
 	return customMonth, nil
 }
 
@@ -224,6 +231,13 @@ func makeCustomYear(str string) (time.Time, error) {
 	}
 
 	customYear := time.Date(yearInt, 1, 0, 0, 0, 0, 0, time.UTC)
+
+	// ensure its valid unix time
+	unixEpoch := time.Unix(0, 0)
+	if customYear.Before(unixEpoch) {
+		return time.Time{}, &ErrInvalidTime{ProvidedTime: str}
+	}
+
 	return customYear, nil
 }
 
