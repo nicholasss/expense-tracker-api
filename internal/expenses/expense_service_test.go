@@ -690,6 +690,26 @@ func TestSummarizeExpenses(t *testing.T) {
 			wantError:   nil,
 		},
 		{
+			name:          "invalid-month-has-letters-month-summary",
+			inputKind:     expenses.CustomMonth,
+			inputModifier: "2025-a9",
+			wantSummary:   nil,
+			expectError:   true,
+			wantError: &expenses.ErrInvalidTime{
+				ProvidedTime: "2025-a9",
+			},
+		},
+		{
+			name:          "invalid-year-has-letters-month-summary",
+			inputKind:     expenses.CustomMonth,
+			inputModifier: "20a5-09",
+			wantSummary:   nil,
+			expectError:   true,
+			wantError: &expenses.ErrInvalidTime{
+				ProvidedTime: "20a5-09",
+			},
+		},
+		{
 			name:          "invalid-empty-month-modifier-summary",
 			inputKind:     expenses.CustomMonth,
 			inputModifier: "",
