@@ -1,7 +1,6 @@
 package sqlite_test
 
 import (
-	"context"
 	"database/sql"
 	"errors"
 	"testing"
@@ -174,7 +173,7 @@ func TestGetByID(t *testing.T) {
 			}()
 
 			// calling the function
-			gotRecord, gotErr := repo.GetByID(context.Background(), testCase.inputID)
+			gotRecord, gotErr := repo.GetByID(t.Context(), testCase.inputID)
 
 			// checking if we expect an error
 			if (gotErr != nil) != testCase.expectError {
@@ -263,7 +262,7 @@ func TestGetAll(t *testing.T) {
 			}()
 
 			// calling the function
-			gotRecords, gotErr := repo.GetAll(context.Background())
+			gotRecords, gotErr := repo.GetAll(t.Context())
 
 			// checking if we expect an error
 			if (gotErr != nil) != testCase.expectError {
@@ -355,7 +354,7 @@ func TestCreate(t *testing.T) {
 			}()
 
 			// call the function
-			gotRecord, gotErr := repo.Create(context.Background(), testCase.inputRecord)
+			gotRecord, gotErr := repo.Create(t.Context(), testCase.inputRecord)
 
 			// checking if we expect an error
 			if (gotErr != nil) != testCase.expectError {
@@ -450,7 +449,7 @@ func TestUpdate(t *testing.T) {
 			}()
 
 			// call the function here
-			gotErr := repo.Update(context.Background(), testCase.inputRecord)
+			gotErr := repo.Update(t.Context(), testCase.inputRecord)
 
 			// checking if we expect an error
 			if (gotErr != nil) != testCase.expectError {
@@ -508,7 +507,7 @@ func TestDelete(t *testing.T) {
 			}()
 
 			// call the function here
-			gotErr := repo.Delete(context.Background(), testCase.inputID)
+			gotErr := repo.Delete(t.Context(), testCase.inputID)
 
 			// checking if we expect an error
 			if (gotErr != nil) != testCase.expectError {
