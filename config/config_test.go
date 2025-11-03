@@ -214,3 +214,14 @@ func TestLoadConfig(t *testing.T) {
 		})
 	}
 }
+
+func TestMissingVariableError(t *testing.T) {
+	err := &config.MissingVariableError{}
+	errStr := err.Error()
+
+	t.Run("test-missing-variable-error", func(t *testing.T) {
+		if errStr != "missing required environmental variable(s)" {
+			t.Errorf("error does not match what was expected")
+		}
+	})
+}
