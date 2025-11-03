@@ -203,7 +203,7 @@ func makeCustomMonth(str string) (time.Time, error) {
 
 	// perform explicit check for month before type casting to time.Month
 	if monthInt < 1 || monthInt > 12 {
-		return time.Time{}, &ErrInvalidTime{ProvidedTime: str, WrappedError: nil}
+		return time.Time{}, &ErrInvalidTime{ProvidedTime: str}
 	}
 
 	customMonth := time.Date(yearInt, time.Month(monthInt), 1, 0, 0, 0, 0, time.UTC)
