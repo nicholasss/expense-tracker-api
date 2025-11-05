@@ -27,7 +27,7 @@ func main() {
 		log.Fatalf("Failed to setup routes: %v", err)
 	}
 
-	log.Printf("Starting server...\n")
+	log.Printf("Starting server at %s...\n", cfg.Address)
 	err = http.ListenAndServe(cfg.Address, mux)
 	if err != nil {
 		log.Fatal(err)
