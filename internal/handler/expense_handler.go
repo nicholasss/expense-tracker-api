@@ -189,11 +189,6 @@ func (h *ExpenseHandler) sendErrors(w http.ResponseWriter, code int, issues []st
 
 // GetAllExpenses ...
 func (h *ExpenseHandler) GetAllExpenses(w http.ResponseWriter, r *http.Request) {
-	if !h.headersAreValid(w, r) {
-		return
-	}
-
-	// pull from service layer
 	expRecords, err := h.Service.GetAllExpenses(r.Context())
 	if err != nil {
 		h.sendErrors(w, 500, []string{"database error"})
