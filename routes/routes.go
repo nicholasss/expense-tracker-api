@@ -19,12 +19,13 @@ func logger(next http.HandlerFunc) http.HandlerFunc {
 }
 
 func SetupRoutes(service *expenses.Service) (*http.ServeMux, error) {
-	mux := http.NewServeMux()
-	han := handler.NewExpanseHandler(service)
+	m := http.NewServeMux()
+	h := handler.NewExpanseHandler(service)
 
 	// register the routes and return
-	mux.HandleFunc("GET /expenses", logger(han.GetAllExpenses))
-	mux.HandleFunc("POST /expenses", logger(han.CreateExpense))
+	m.HandleFunc("GET /expenses", logger(h.GetAllExpenses))
+	m.HandleFunc("GET /expenses/{id}", logger(h.GetExpenseByID))
+	m.HandleFunc("POST /expenses", logger(h.CreateExpense))
 
-	return mux, nil
+	return m, nil
 }
