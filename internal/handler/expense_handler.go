@@ -185,6 +185,8 @@ func (h *ExpenseHandler) sendErrors(w http.ResponseWriter, code int, issues []st
 	}
 }
 
+// === Endpoint Handlers ===
+
 // GetAllExpenses ...
 func (h *ExpenseHandler) GetAllExpenses(w http.ResponseWriter, r *http.Request) {
 	log.Println("get all expenses not implemented yet")
