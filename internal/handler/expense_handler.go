@@ -189,7 +189,23 @@ func (h *ExpenseHandler) sendErrors(w http.ResponseWriter, code int, issues []st
 
 // GetAllExpenses ...
 func (h *ExpenseHandler) GetAllExpenses(w http.ResponseWriter, r *http.Request) {
-	log.Println("get all expenses not implemented yet")
+	if !h.headersAreValid(w, r) {
+		return
+	}
+
+	// pull from service layer
+	expRecords, err := h.Service.GetAllExpenses(r.Context())
+	if err != nil {
+		h.sendErrors(w, 500, []string{"database error"})
+		return
+	}
+
+	responsePayload := make([]ExpenseResponse, 0, len(expRecords))
+	for _, exp := range expRecords {
+		responsePayload = append(responsePayload, *expenseToResponse(exp))
+	}
+
+	h.sendJSON(w, 200, responsePayload)
 }
 
 // CreateExpense handles 'POST /expenses'
