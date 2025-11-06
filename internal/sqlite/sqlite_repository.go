@@ -31,8 +31,8 @@ type QueryError struct {
 // Error implements the error interface
 func (e *QueryError) Error() string { return e.Query + ": " + e.Err.Error() }
 
-// Is is used for errors.Is(), right now with testing
-func (e *QueryError) Is(target error) bool { return target == e.Err }
+// Unwrap implementing for errors.Is()
+func (e *QueryError) Unwrap() error { return e.Err }
 
 // dbExpense has time stored as unix seconds (not milli-)
 type dbExpense struct {
