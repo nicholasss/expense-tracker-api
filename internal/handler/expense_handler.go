@@ -122,9 +122,6 @@ func (h *ExpenseHandler) headersAreValid(w http.ResponseWriter, r *http.Request)
 	if !strings.Contains(ct, "application/json") {
 		issues = append(issues, "'Content-Type' header missing 'application/json'")
 	}
-	if !strings.Contains(ct, "charset=utf-8") {
-		issues = append(issues, "'Content-Type' header missing 'charset=utf-8'")
-	}
 
 	if len(issues) == 0 {
 		return true
