@@ -309,6 +309,7 @@ func (h *ExpenseHandler) GetExpenseByID(w http.ResponseWriter, r *http.Request) 
 	idInt, err := validateID(r.PathValue("id"))
 	if err != nil {
 		h.sendErrors(w, http.StatusBadRequest, []string{err.Error()})
+		return
 	}
 
 	// calling service and letting it perform semantic/'business' validation
