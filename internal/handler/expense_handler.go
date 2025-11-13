@@ -92,6 +92,32 @@ func (c *CreateExpenseRequest) validate() ([]string, bool) {
 	return issues, isValid
 }
 
+// UpdateExpenseRequest is utilized specifically for the UpdateExpense endpoint: PUT /expense
+type UpdateExpenseRequest struct {
+	ID int `json:"id"`
+	CreateExpenseRequest
+}
+
+func (u *UpdateExpenseRequest) validate() ([]string, bool) {
+	issues := make([]string, 0)
+	isValid := true
+
+	if u.ID <= 0 {
+		issues = append(issues, "id is not valid")
+		isValid = false
+	}
+
+	// just utilize the prexisting validation method
+	c := CreateExpenseRequest{Amount: u.Amount, Description: u.Description, OccuredAt: u.OccuredAt}
+	cIssues, cIsValid := c.validate()
+	if !cIsValid {
+		issues = append(issues, cIssues...)
+		isValid = false
+	}
+
+	return issues, isValid
+}
+
 // ExpenseResponse is hopefully a general response that can be used across several endpoints
 type ExpenseResponse struct {
 	ID          int         `json:"id"`
@@ -308,7 +334,42 @@ func (h *ExpenseHandler) GetExpenseByID(w http.ResponseWriter, r *http.Request) 
 
 // UpdateExpense ...
 func (h *ExpenseHandler) UpdateExpense(w http.ResponseWriter, r *http.Request) {
-	log.Println("update expense is not implemented yet")
+	if !h.headersAreValid(w, r) {
+		return
+	}
+
+	// recieve json body
+	var reqBody UpdateExpenseRequest
+	err := json.NewDecoder(r.Body).Decode(&reqBody)
+	if err != nil {
+		h.sendErrors(w, 400, []string{"unable to decode body"})
+		return
+	}
+
+	// defer closing body
+	defer func() {
+		err = r.Body.Close()
+		if err != nil {
+			h.sendErrors(w, 500, []string{})
+		}
+	}()
+
+	// validatin of request body
+	issues, isValid := reqBody.validate()
+	if !isValid {
+		h.sendErrors(w, 400, issues)
+		return
+	}
+
+	// send to service layer
+	err = h.Service.UpdateExpense(r.Context(), reqBody.ID, reqBody.OccuredAt.Time, reqBody.Description, reqBody.Amount)
+	if err != nil {
+		h.sendErrors(w, 500, []string{err.Error()})
+		return
+	}
+
+	// otherwise everything went perfect
+	w.WriteHeader(http.StatusOK)
 }
 
 // DeleteExpense ...
