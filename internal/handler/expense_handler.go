@@ -393,7 +393,27 @@ func (h *ExpenseHandler) UpdateExpense(w http.ResponseWriter, r *http.Request) {
 
 // DeleteExpense ...
 func (h *ExpenseHandler) DeleteExpense(w http.ResponseWriter, r *http.Request) {
-	log.Println("delete expense is not implemented yet")
+	idStr := r.PathValue("id")
+	idInt, err := validateID(idStr)
+	if err != nil {
+		h.sendErrors(w, http.StatusBadRequest, []string{err.Error()})
+		return
+	}
+
+	// send to service
+	err = h.Service.DeleteExpense(r.Context(), idInt)
+	if err != nil {
+		if errors.Is(err, expenses.ErrInvalidID) {
+			h.sendErrors(w, http.StatusBadRequest, []string{err.Error()})
+			return
+		}
+
+		// generic server error
+		h.sendErrors(w, http.StatusInternalServerError, []string{})
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 // SummarizeExpenses ...

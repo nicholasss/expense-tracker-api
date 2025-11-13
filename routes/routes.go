@@ -27,6 +27,7 @@ func SetupRoutes(service *expenses.Service) (*http.ServeMux, error) {
 	m.HandleFunc("GET /expenses/{id}", logger(h.GetExpenseByID))
 	m.HandleFunc("POST /expenses", logger(h.CreateExpense))
 	m.HandleFunc("PUT /expenses", logger(h.UpdateExpense))
+	m.HandleFunc("DELETE /expenses/{id}", logger(h.DeleteExpense))
 
 	return m, nil
 }
