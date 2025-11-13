@@ -281,8 +281,13 @@ func (h *ExpenseHandler) GetExpenseByID(w http.ResponseWriter, r *http.Request) 
 	// calling service and letting it perform semantic/'business' validation
 	exp, err := h.Service.GetExpenseByID(r.Context(), idInt)
 	if err != nil {
-		if errors.Is(err, expenses.ErrInvalidID) || errors.Is(err, sql.ErrNoRows) {
-			h.sendErrors(w, 404, []string{err.Error(), "id not found"})
+		// checking for invalid ID or an ID that does not exist
+		if errors.Is(err, expenses.ErrInvalidID) {
+			h.sendErrors(w, 404, []string{err.Error()})
+			return
+		}
+		if errors.Is(err, sql.ErrNoRows) {
+			h.sendErrors(w, 404, []string{"id is invalid"})
 			return
 		}
 		// any other errors
