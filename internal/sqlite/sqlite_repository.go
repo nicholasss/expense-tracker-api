@@ -29,10 +29,17 @@ type QueryError struct {
 }
 
 // Error implements the error interface
-func (e *QueryError) Error() string { return e.Query + ": " + e.Err.Error() }
+func (e *QueryError) Error() string {
+	return fmt.Sprintf("%s: %v", e.Query, e.Err)
+}
 
 // Unwrap implementing for errors.Is()
 func (e *QueryError) Unwrap() error { return e.Err }
+
+// NewQueryError is a factory method
+func NewQueryError(query string, err error) *QueryError {
+	return &QueryError{Query: query, Err: err}
+}
 
 // dbExpense has time stored as unix seconds (not milli-)
 type dbExpense struct {
@@ -87,7 +94,7 @@ func (r *SqliteRepository) GetByID(ctx context.Context, id int) (*expenses.Expen
 	row := r.db.QueryRowContext(ctx, query, id)
 	err := row.Scan(&dbE.ID, &dbE.CreatedAt, &dbE.OccuredAt, &dbE.Description, &dbE.Amount)
 	if err == sql.ErrNoRows {
-		return nil, &QueryError{Query: query, Err: err}
+		return nil, NewQueryError(query, err)
 	}
 	if err != nil {
 		return nil, err
