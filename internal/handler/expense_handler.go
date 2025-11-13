@@ -368,6 +368,21 @@ func (h *ExpenseHandler) UpdateExpense(w http.ResponseWriter, r *http.Request) {
 	// send to service layer
 	err = h.Service.UpdateExpense(r.Context(), reqBody.ID, reqBody.OccuredAt.Time, reqBody.Description, reqBody.Amount)
 	if err != nil {
+		// check for custom errors
+		if errors.Is(err, expenses.ErrInvalidOccuredAtTime) {
+			h.sendErrors(w, http.StatusBadRequest, []string{err.Error()})
+			return
+		}
+		if errors.Is(err, expenses.ErrInvalidDescription) {
+			h.sendErrors(w, http.StatusBadRequest, []string{err.Error()})
+			return
+		}
+		if errors.Is(err, expenses.ErrInvalidAmount) {
+			h.sendErrors(w, http.StatusBadRequest, []string{err.Error()})
+			return
+		}
+
+		// generic errors
 		h.sendErrors(w, 500, []string{err.Error()})
 		return
 	}
