@@ -203,6 +203,9 @@ func (h *ExpenseHandler) sendJSON(w http.ResponseWriter, status int, responsePay
 
 // sendErrors will create and write the provided error code to the provided http.ResponseWriter.
 func (h *ExpenseHandler) sendErrors(w http.ResponseWriter, code int, issues []string) {
+	if issues == nil {
+		issues = make([]string, 0)
+	}
 	if len(issues) == 0 {
 		issues = append(issues, http.StatusText(code))
 	}
