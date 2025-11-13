@@ -119,6 +119,21 @@ type ErrorResponse struct {
 
 // === Helper Functions ===
 
+// validateID performs structural validation of the ID
+func validateID(idStr string) (int, error) {
+	if idStr == "" {
+		return 0, errors.New("id in path is missing")
+	}
+
+	// checking structural validity
+	idInt, err := strconv.Atoi(idStr)
+	if err != nil {
+		return 0, errors.New("id in path is not valid id")
+	}
+
+	return idInt, nil
+}
+
 // headersAreValid will check for missing headers and will call sendError if needed.
 func (h *ExpenseHandler) headersAreValid(w http.ResponseWriter, r *http.Request) bool {
 	issues := make([]string, 0)
@@ -264,18 +279,10 @@ func (h *ExpenseHandler) CreateExpense(w http.ResponseWriter, r *http.Request) {
 
 // GetExpenseByID ...
 func (h *ExpenseHandler) GetExpenseByID(w http.ResponseWriter, r *http.Request) {
-	// enforcing presence of ID (may not run into this)
-	idStr := r.PathValue("id")
-	if idStr == "" {
-		h.sendErrors(w, 404, []string{"id in path is missing"})
-		return
-	}
-
-	// checking structural validity
-	idInt, err := strconv.Atoi(idStr)
+	// structural validation of id
+	idInt, err := validateID(r.PathValue("id"))
 	if err != nil {
-		h.sendErrors(w, 400, []string{"id in path is not valid id"})
-		return
+		h.sendErrors(w, http.StatusBadRequest, []string{err.Error()})
 	}
 
 	// calling service and letting it perform semantic/'business' validation
