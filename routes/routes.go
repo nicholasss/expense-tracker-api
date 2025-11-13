@@ -18,7 +18,7 @@ func logger(next http.HandlerFunc) http.HandlerFunc {
 	})
 }
 
-func SetupRoutes(service *expenses.Service) (*http.ServeMux, error) {
+func SetupRoutes(service expenses.Service) (*http.ServeMux, error) {
 	m := http.NewServeMux()
 	h := handler.NewExpanseHandler(service)
 

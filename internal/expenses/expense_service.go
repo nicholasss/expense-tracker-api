@@ -69,19 +69,19 @@ func checkOccuredAt(occ time.Time) error {
 	return nil
 }
 
-// Service implements all of the underlying business logic.
+// ExpenseService implements all of the underlying business logic.
 // Things such as expenses being positive and not zero, etc.
-type Service struct {
+type ExpenseService struct {
 	repo Repository
 }
 
 // NewService utilizes the Repository interface defined in internal/repository.go
 // This way, we never need to worry about the underlying database
-func NewService(repo Repository) *Service {
-	return &Service{repo: repo}
+func NewService(repo Repository) *ExpenseService {
+	return &ExpenseService{repo: repo}
 }
 
-func (s *Service) NewExpense(ctx context.Context, occuredAt time.Time, description string, amount int64) (*Expense, error) {
+func (s *ExpenseService) NewExpense(ctx context.Context, occuredAt time.Time, description string, amount int64) (*Expense, error) {
 	// check description
 	if err := checkDescription(description); err != nil {
 		return nil, err
@@ -111,7 +111,7 @@ func (s *Service) NewExpense(ctx context.Context, occuredAt time.Time, descripti
 	return exp, nil
 }
 
-func (s *Service) GetAllExpenses(ctx context.Context) ([]*Expense, error) {
+func (s *ExpenseService) GetAllExpenses(ctx context.Context) ([]*Expense, error) {
 	exps, err := s.repo.GetAll(ctx)
 	if err != nil {
 		return nil, err
@@ -120,7 +120,7 @@ func (s *Service) GetAllExpenses(ctx context.Context) ([]*Expense, error) {
 	return exps, nil
 }
 
-func (s *Service) GetExpenseByID(ctx context.Context, id int) (*Expense, error) {
+func (s *ExpenseService) GetExpenseByID(ctx context.Context, id int) (*Expense, error) {
 	if id <= 0 {
 		return nil, ErrInvalidID
 	}
@@ -133,7 +133,7 @@ func (s *Service) GetExpenseByID(ctx context.Context, id int) (*Expense, error) 
 	return exp, nil
 }
 
-func (s *Service) UpdateExpense(ctx context.Context, id int, occuredAt time.Time, description string, amount int64) error {
+func (s *ExpenseService) UpdateExpense(ctx context.Context, id int, occuredAt time.Time, description string, amount int64) error {
 	if id <= 0 {
 		return ErrInvalidID
 	}
@@ -167,7 +167,7 @@ func (s *Service) UpdateExpense(ctx context.Context, id int, occuredAt time.Time
 	return nil
 }
 
-func (s *Service) DeleteExpense(ctx context.Context, id int) error {
+func (s *ExpenseService) DeleteExpense(ctx context.Context, id int) error {
 	if id <= 0 {
 		return ErrInvalidID
 	}
@@ -241,7 +241,7 @@ func makeCustomYear(str string) (time.Time, error) {
 	return customYear, nil
 }
 
-func (s *Service) SummarizeExpenses(ctx context.Context, kind SummaryTimeRange, modifier string) (*ExpenseSummary, error) {
+func (s *ExpenseService) SummarizeExpenses(ctx context.Context, kind SummaryTimeRange, modifier string) (*ExpenseSummary, error) {
 	exps, err := s.repo.GetAll(ctx)
 	if err != nil {
 		return nil, err

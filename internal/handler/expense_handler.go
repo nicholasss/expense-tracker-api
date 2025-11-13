@@ -22,11 +22,10 @@ import (
 
 // The ExpenseHandler is imported into a /cmd package, and provides the handlers via its methods.
 type ExpenseHandler struct {
-	Service *expenses.Service
+	Service expenses.Service
 }
 
-// NewExpanseHandler does not use an interface, but rather directly using the exported Service type.
-func NewExpanseHandler(service *expenses.Service) *ExpenseHandler {
+func NewExpanseHandler(service expenses.Service) *ExpenseHandler {
 	return &ExpenseHandler{Service: service}
 }
 
