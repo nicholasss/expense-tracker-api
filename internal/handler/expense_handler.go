@@ -5,6 +5,7 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"strings"
@@ -62,6 +63,8 @@ type CreateExpenseRequest struct {
 	Amount      int64       `json:"amount"`
 }
 
+// validate performs structural/syntactic validation
+//
 // Method validate will respond with a slice of string, and a bool.
 // If it is valid then it will be `[]string{}, true`,
 // otherwise it will list reasons and be false `[]string{...}, false`.
@@ -206,7 +209,7 @@ func (h *ExpenseHandler) CreateExpense(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// get the json body, partially performs validation
+	// get the json body, partially performs validation by ensuring structural validity
 	var reqBody *CreateExpenseRequest
 	err := json.NewDecoder(r.Body).Decode(&reqBody)
 	if err != nil {
@@ -222,17 +225,34 @@ func (h *ExpenseHandler) CreateExpense(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	// validate request body
+	// validation of structure
 	issues, isValid := reqBody.validate()
 	if !isValid {
 		h.sendErrors(w, 400, issues)
 		return
 	}
 
-	// send to service layer
+	// send to service layer and semantic/'business' validation
+	//
+	// we will just need to send the single error back to the client, even if there are multiple issues
 	expRecord, err := h.Service.NewExpense(r.Context(), reqBody.OccuredAt.Time, reqBody.Description, reqBody.Amount)
 	if err != nil {
-		h.sendErrors(w, 500, []string{"database error"})
+		// check for custom errors
+		if errors.Is(err, expenses.ErrInvalidOccuredAtTime) {
+			h.sendErrors(w, http.StatusBadRequest, []string{err.Error()})
+			return
+		}
+		if errors.Is(err, expenses.ErrInvalidDescription) {
+			h.sendErrors(w, http.StatusBadRequest, []string{err.Error()})
+			return
+		}
+		if errors.Is(err, expenses.ErrInvalidAmount) {
+			h.sendErrors(w, http.StatusBadRequest, []string{err.Error()})
+			return
+		}
+
+		// otherwise errors would likely be 5XX
+		h.sendErrors(w, 500, []string{})
 		return
 	}
 
