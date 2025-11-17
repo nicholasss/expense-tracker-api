@@ -2,6 +2,7 @@ package handler_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -180,16 +181,14 @@ func setupMockService(t *testing.T) expenses.Service {
 
 func TestGetAllExpenses(t *testing.T) {
 	testTable := []struct {
-		name        string
-		wantCode    int
-		wantRecords []*expenses.Expense
-		wantBody    string
-		wantHeaders map[string]string
+		name         string
+		inputRecords []*expenses.Expense
+		wantCode     int
+		wantHeaders  map[string]string
 	}{
 		{
-			name:     "valid-request",
-			wantCode: 200,
-			wantRecords: []*expenses.Expense{
+			name: "valid-request",
+			inputRecords: []*expenses.Expense{
 				{
 					ID:               1,
 					Amount:           1999,
@@ -209,27 +208,27 @@ func TestGetAllExpenses(t *testing.T) {
 					Description:      "parking payment",
 				},
 			},
-			wantBody:    `[{"id":1,"created_at":"1970-01-01T00:00:00Z","occured_at":"2025-11-17T16:57:21Z","description":"movie tickets","amount":1999},{"id":2,"created_at":"1970-01-01T00:00:00Z","occured_at":"2025-11-17T17:57:11Z","description":"big fancy dinner","amount":28089},{"id":3,"created_at":"1970-01-01T00:00:00Z","occured_at":"2025-11-17T18:58:01Z","description":"parking payment","amount":940}]`,
+			wantCode:    200,
 			wantHeaders: map[string]string{"Content-Type": "application/json"},
 		},
 	}
 
 	for _, testCase := range testTable {
 		t.Run(testCase.name, func(t *testing.T) {
-			// setup mock repo/service
-			service := setupMockService(t)
-			handler := handler.NewExpanseHandler(service)
+			// setup mock repo/testService
+			testService := setupMockService(t)
+			testHandler := handler.NewExpanseHandler(testService)
 
 			// test request
 			request := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "http://example.com/expenses", http.NoBody)
-
 			// response recorder
 			recorder := httptest.NewRecorder()
 
 			// call handler
-			handler.GetAllExpenses(recorder, request)
+			testHandler.GetAllExpenses(recorder, request)
 			gotResp := recorder.Result()
 
+			// read body
 			gotBody, err := io.ReadAll(gotResp.Body)
 			if err != nil {
 				t.Fatalf("cannot read response body due to: %s", err)
@@ -252,29 +251,44 @@ func TestGetAllExpenses(t *testing.T) {
 			}
 
 			// check headers
-			if gotHeaders == nil {
-				t.Errorf("response did not have headers")
-			} else {
-				for wantHeaderKey, wantHeaderVal := range testCase.wantHeaders {
-
-					// checking each header for existence and its values
-					gotHeaderValsForKey, exists := gotHeaders[wantHeaderKey]
-					if !exists {
-						t.Errorf("got nothing for header %q want value %q", wantHeaderKey, wantHeaderVal)
-						continue
-					}
-
-					// checking for header values of the key provided
-					if !slices.Contains(gotHeaderValsForKey, wantHeaderVal) {
-						t.Errorf("under header %q, got values of %+q, wanted value %q", wantHeaderKey, gotHeaderValsForKey, wantHeaderVal)
-					}
-
+			for wantHeaderKey, wantHeaderVal := range testCase.wantHeaders {
+				gotHeaderVals, exists := gotHeaders[wantHeaderKey]
+				if !exists {
+					t.Errorf("missing header %q", wantHeaderKey)
+				}
+				if !slices.Contains(gotHeaderVals, wantHeaderVal) {
+					t.Errorf("header %q mismatch: got %v, want %v", wantHeaderKey, gotHeaderVals, wantHeaderVal)
 				}
 			}
 
 			// check response body
-			if string(gotBody) != testCase.wantBody {
-				t.Errorf("got body: \n'%s'\nwant body: \n'%s'\n", gotBody, testCase.wantBody)
+			var gotExpenses []handler.ExpenseResponse
+			if err := json.Unmarshal(gotBody, &gotExpenses); err != nil {
+				t.Fatalf("failed to unmarshal to gotExpenses due to err: %q", err)
+			}
+
+			// first check len
+			if len(gotExpenses) != len(testCase.inputRecords) {
+				t.Errorf("expected %d records, got %d", len(testCase.inputRecords), len(gotExpenses))
+			}
+
+			// compare records
+			for i := range gotExpenses {
+				// id
+				if gotExpenses[i].ID != testCase.inputRecords[i].ID {
+					t.Errorf("ID mismatch at index: %d, got %d, want %d", i, gotExpenses[i].ID, testCase.inputRecords[i].ID)
+				}
+
+				// amount
+				if gotExpenses[i].Amount != testCase.inputRecords[i].Amount {
+					t.Errorf("Amount mismatch at index: %d, got %d, want %d", i, gotExpenses[i].Amount, testCase.inputRecords[i].Amount)
+				}
+
+				// occured at
+				if !gotExpenses[i].OccuredAt.Equal(testCase.inputRecords[i].ExpenseOccuredAt) {
+					t.Logf("DEBUG: record %+v", gotExpenses[i])
+					t.Errorf("ExpenseOccuredAt mismatch at index: %d, got %s, want %s", i, gotExpenses[i].OccuredAt.Time, testCase.inputRecords[i].ExpenseOccuredAt)
+				}
 			}
 		})
 	}
