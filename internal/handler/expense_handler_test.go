@@ -3,6 +3,10 @@ package handler_test
 import (
 	"context"
 	"fmt"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"slices"
 	"sync"
 	"testing"
 	"time"
@@ -50,7 +54,7 @@ func (m *mockService) NewExpense(ctx context.Context, occuredAt time.Time, descr
 		ID:               id,
 		Amount:           amount,
 		ExpenseOccuredAt: occuredAt,
-		RecordCreatedAt:  time.Now(),
+		RecordCreatedAt:  time.Unix(0, 0), // recorded time doesnt matter :) tested elsewhere
 		Description:      description,
 	}
 
@@ -145,6 +149,30 @@ func setupMockService(t *testing.T) expenses.Service {
 	}
 
 	// insert 'records'
+	records := []expenses.Expense{
+		{
+			Amount:           1999,
+			ExpenseOccuredAt: time.Unix(1763398641, 0),
+			Description:      "movie tickets",
+		},
+		{
+			Amount:           28089,
+			ExpenseOccuredAt: time.Unix(1763402231, 0),
+			Description:      "big fancy dinner",
+		},
+		{
+			Amount:           940,
+			ExpenseOccuredAt: time.Unix(1763405881, 0),
+			Description:      "parking payment",
+		},
+	}
+
+	for _, record := range records {
+		_, err := s.NewExpense(t.Context(), record.ExpenseOccuredAt, record.Description, record.Amount)
+		if err != nil {
+			t.Fatalf("unable to insert records into mock database due to: %s", err)
+		}
+	}
 
 	// return setup service
 	return s
@@ -152,23 +180,102 @@ func setupMockService(t *testing.T) expenses.Service {
 
 func TestGetAllExpenses(t *testing.T) {
 	testTable := []struct {
-		name string
+		name        string
+		wantCode    int
+		wantRecords []*expenses.Expense
+		wantBody    string
+		wantHeaders map[string]string
 	}{
 		{
-			name: "valid-request",
+			name:     "valid-request",
+			wantCode: 200,
+			wantRecords: []*expenses.Expense{
+				{
+					ID:               1,
+					Amount:           1999,
+					ExpenseOccuredAt: time.Unix(1763398641, 0),
+					Description:      "movie tickets",
+				},
+				{
+					ID:               2,
+					Amount:           28089,
+					ExpenseOccuredAt: time.Unix(1763402231, 0),
+					Description:      "big fancy dinner",
+				},
+				{
+					ID:               3,
+					Amount:           940,
+					ExpenseOccuredAt: time.Unix(1763405881, 0),
+					Description:      "parking payment",
+				},
+			},
+			wantBody:    `[{"id":1,"created_at":"1970-01-01T00:00:00Z","occured_at":"2025-11-17T16:57:21Z","description":"movie tickets","amount":1999},{"id":2,"created_at":"1970-01-01T00:00:00Z","occured_at":"2025-11-17T17:57:11Z","description":"big fancy dinner","amount":28089},{"id":3,"created_at":"1970-01-01T00:00:00Z","occured_at":"2025-11-17T18:58:01Z","description":"parking payment","amount":940}]`,
+			wantHeaders: map[string]string{"Content-Type": "application/json"},
 		},
 	}
 
 	for _, testCase := range testTable {
 		t.Run(testCase.name, func(t *testing.T) {
 			// setup mock repo/service
-			s := setupMockService(t)
-			h := handler.NewExpanseHandler(s)
+			service := setupMockService(t)
+			handler := handler.NewExpanseHandler(service)
 
-			// defered teardown
-			// call function
-			// check errors
-			// check response
+			// test request
+			request := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "http://example.com/expenses", http.NoBody)
+
+			// response recorder
+			recorder := httptest.NewRecorder()
+
+			// call handler
+			handler.GetAllExpenses(recorder, request)
+			gotResp := recorder.Result()
+
+			gotBody, err := io.ReadAll(gotResp.Body)
+			if err != nil {
+				t.Fatalf("cannot read response body due to: %s", err)
+			}
+
+			// defering body closure
+			defer func() {
+				err := gotResp.Body.Close()
+				if err != nil {
+					t.Fatalf("unable to close test response due to: %s", err)
+				}
+			}()
+
+			// getting headers
+			gotHeaders := gotResp.Header.Clone()
+
+			// check response code
+			if gotResp.StatusCode != testCase.wantCode {
+				t.Errorf("got status HTTP %d, wanted status HTTP %d", gotResp.StatusCode, testCase.wantCode)
+			}
+
+			// check headers
+			if gotHeaders == nil {
+				t.Errorf("response did not have headers")
+			} else {
+				for wantHeaderKey, wantHeaderVal := range testCase.wantHeaders {
+
+					// checking each header for existence and its values
+					gotHeaderValsForKey, exists := gotHeaders[wantHeaderKey]
+					if !exists {
+						t.Errorf("got nothing for header %q want value %q", wantHeaderKey, wantHeaderVal)
+						continue
+					}
+
+					// checking for header values of the key provided
+					if !slices.Contains(gotHeaderValsForKey, wantHeaderVal) {
+						t.Errorf("under header %q, got values of %+q, wanted value %q", wantHeaderKey, gotHeaderValsForKey, wantHeaderVal)
+					}
+
+				}
+			}
+
+			// check response body
+			if string(gotBody) != testCase.wantBody {
+				t.Errorf("got body: \n'%s'\nwant body: \n'%s'\n", gotBody, testCase.wantBody)
+			}
 		})
 	}
 }
