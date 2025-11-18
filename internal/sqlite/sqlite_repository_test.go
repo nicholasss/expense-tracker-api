@@ -279,8 +279,6 @@ func TestGetAll(t *testing.T) {
 			// checking result
 			if !testCase.expectError && gotRecords != nil {
 				for i, gotRecord := range gotRecords {
-
-					t.Logf("Record %d mismatch", i+1)
 					checkExpenseEquality(t, gotRecord, testCase.wantRecords[i])
 				}
 			}
