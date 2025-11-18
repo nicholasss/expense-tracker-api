@@ -250,6 +250,25 @@ func TestGetAllExpenses(t *testing.T) {
 			testHandler.GetAllExpenses(recorder, request)
 			gotResp := recorder.Result()
 
+			// check response code
+			if gotResp.StatusCode != testCase.wantCode {
+				t.Errorf("got status HTTP %d, wanted status HTTP %d", gotResp.StatusCode, testCase.wantCode)
+			}
+
+			// getting headers
+			gotHeaders := gotResp.Header.Clone()
+
+			// check headers
+			for wantHeaderKey, wantHeaderVal := range testCase.wantHeaders {
+				gotHeaderVals, exists := gotHeaders[wantHeaderKey]
+				if !exists {
+					t.Errorf("missing header %q", wantHeaderKey)
+				}
+				if !slices.Contains(gotHeaderVals, wantHeaderVal) {
+					t.Errorf("header %q mismatch: got %v, want %v", wantHeaderKey, gotHeaderVals, wantHeaderVal)
+				}
+			}
+
 			// read body
 			gotBody, err := io.ReadAll(gotResp.Body)
 			if err != nil {
@@ -263,25 +282,6 @@ func TestGetAllExpenses(t *testing.T) {
 					t.Fatalf("unable to close test response due to: %s", err)
 				}
 			}()
-
-			// getting headers
-			gotHeaders := gotResp.Header.Clone()
-
-			// check response code
-			if gotResp.StatusCode != testCase.wantCode {
-				t.Errorf("got status HTTP %d, wanted status HTTP %d", gotResp.StatusCode, testCase.wantCode)
-			}
-
-			// check headers
-			for wantHeaderKey, wantHeaderVal := range testCase.wantHeaders {
-				gotHeaderVals, exists := gotHeaders[wantHeaderKey]
-				if !exists {
-					t.Errorf("missing header %q", wantHeaderKey)
-				}
-				if !slices.Contains(gotHeaderVals, wantHeaderVal) {
-					t.Errorf("header %q mismatch: got %v, want %v", wantHeaderKey, gotHeaderVals, wantHeaderVal)
-				}
-			}
 
 			// check response body
 			var gotExpenses []handler.ExpenseResponse
