@@ -191,14 +191,14 @@ func setupMockService(t *testing.T) expenses.Service {
 
 func TestGetAllExpenses(t *testing.T) {
 	testTable := []struct {
-		name         string
-		inputRecords []*expenses.Expense
-		wantCode     int
-		wantHeaders  map[string]string
+		name        string
+		wantRecords []*expenses.Expense
+		wantCode    int
+		wantHeaders map[string]string
 	}{
 		{
 			name: "valid-request",
-			inputRecords: []*expenses.Expense{
+			wantRecords: []*expenses.Expense{
 				{
 					ID:               1,
 					Amount:           1999,
@@ -290,26 +290,26 @@ func TestGetAllExpenses(t *testing.T) {
 			}
 
 			// first check len
-			if len(gotExpenses) != len(testCase.inputRecords) {
-				t.Errorf("expected %d records, got %d", len(testCase.inputRecords), len(gotExpenses))
+			if len(gotExpenses) != len(testCase.wantRecords) {
+				t.Errorf("expected %d records, got %d", len(testCase.wantRecords), len(gotExpenses))
 			}
 
 			// compare records
 			for i := range gotExpenses {
 				// id
-				if gotExpenses[i].ID != testCase.inputRecords[i].ID {
-					t.Errorf("ID mismatch at index: %d, got %d, want %d", i, gotExpenses[i].ID, testCase.inputRecords[i].ID)
+				if gotExpenses[i].ID != testCase.wantRecords[i].ID {
+					t.Errorf("ID mismatch at index: %d, got %d, want %d", i, gotExpenses[i].ID, testCase.wantRecords[i].ID)
 				}
 
 				// amount
-				if gotExpenses[i].Amount != testCase.inputRecords[i].Amount {
-					t.Errorf("Amount mismatch at index: %d, got %d, want %d", i, gotExpenses[i].Amount, testCase.inputRecords[i].Amount)
+				if gotExpenses[i].Amount != testCase.wantRecords[i].Amount {
+					t.Errorf("Amount mismatch at index: %d, got %d, want %d", i, gotExpenses[i].Amount, testCase.wantRecords[i].Amount)
 				}
 
 				// occured at
-				if !gotExpenses[i].OccuredAt.Equal(testCase.inputRecords[i].ExpenseOccuredAt) {
+				if !gotExpenses[i].OccuredAt.Equal(testCase.wantRecords[i].ExpenseOccuredAt) {
 					t.Logf("DEBUG: record %+v", gotExpenses[i])
-					t.Errorf("ExpenseOccuredAt mismatch at index: %d, got %s, want %s", i, gotExpenses[i].OccuredAt.Time, testCase.inputRecords[i].ExpenseOccuredAt)
+					t.Errorf("ExpenseOccuredAt mismatch at index: %d, got %s, want %s", i, gotExpenses[i].OccuredAt.Time, testCase.wantRecords[i].ExpenseOccuredAt)
 				}
 			}
 		})
