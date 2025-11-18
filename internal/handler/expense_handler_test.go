@@ -1,6 +1,12 @@
+// Package handler_test will test the expense handler that is implemented in internal/handler/expense_handler.go
+//
+// We will not be testing against the value of returned errors from the api.
+// The return body of the handler on non-2XX responses are not going to be standardized and can change without notice.
+// The status code of non-2XX responses are the best sentinel value to look for.
 package handler_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -311,6 +317,193 @@ func TestGetAllExpenses(t *testing.T) {
 					t.Logf("DEBUG: record %+v", gotExpenses[i])
 					t.Errorf("ExpenseOccuredAt mismatch at index: %d, got %s, want %s", i, gotExpenses[i].OccuredAt.Time, testCase.wantRecords[i].ExpenseOccuredAt)
 				}
+			}
+		})
+	}
+}
+
+func TestNewExpense(t *testing.T) {
+	testTable := []struct {
+		name         string
+		inputRecord  *handler.CreateExpenseRequest
+		inputHeaders map[string]string
+		wantRecord   *handler.ExpenseResponse
+		wantCode     int
+		wantHeaders  map[string]string
+	}{
+		{
+			name: "valid-new-expense-a",
+			inputRecord: &handler.CreateExpenseRequest{
+				Amount:      452_39,
+				OccuredAt:   handler.RFC3339Time{Time: time.Unix(1763391611, 0)},
+				Description: "smart automatic litterbox",
+			},
+			inputHeaders: map[string]string{"Content-Type": "application/json"},
+			wantRecord: &handler.ExpenseResponse{
+				ID:          6,
+				Amount:      452_39,
+				OccuredAt:   handler.RFC3339Time{Time: time.Unix(1763391611, 0)},
+				Description: "smart automatic litterbox",
+			},
+			wantCode:    201,
+			wantHeaders: map[string]string{"Content-Type": "application/json"},
+		},
+		{
+			name: "valid-new-expense-b",
+			inputRecord: &handler.CreateExpenseRequest{
+				Amount:      1,
+				OccuredAt:   handler.RFC3339Time{Time: time.Unix(1763391000, 0)},
+				Description: "lost a penny",
+			},
+			inputHeaders: map[string]string{"Content-Type": "application/json"},
+			wantRecord: &handler.ExpenseResponse{
+				ID:          6,
+				Amount:      1,
+				OccuredAt:   handler.RFC3339Time{Time: time.Unix(1763391000, 0)},
+				Description: "lost a penny",
+			},
+			wantCode:    201,
+			wantHeaders: map[string]string{"Content-Type": "application/json"},
+		},
+		//
+		// test for invalid headers
+		{
+			name: "invalid-new-expense-no-headers",
+			inputRecord: &handler.CreateExpenseRequest{
+				Amount:      1,
+				OccuredAt:   handler.RFC3339Time{Time: time.Unix(1763391000, 0)},
+				Description: "lost a penny",
+			},
+			inputHeaders: map[string]string{},
+			wantRecord:   &handler.ExpenseResponse{},
+			wantCode:     400,
+			wantHeaders:  map[string]string{},
+		},
+		//
+		// test for invalid amount (zero value)
+		{
+			name: "invalid-new-expense-zeroval-amount",
+			inputRecord: &handler.CreateExpenseRequest{
+				Amount:      0,
+				OccuredAt:   handler.RFC3339Time{Time: time.Unix(1763391000, 0)},
+				Description: "lost a penny",
+			},
+			inputHeaders: map[string]string{"Content-Type": "application/json"},
+			wantRecord:   &handler.ExpenseResponse{},
+			wantCode:     400,
+			wantHeaders:  map[string]string{},
+		},
+		//
+		// test for invalid time (zero value)
+		{
+			name: "invalid-new-expense-zeroval-occuredat",
+			inputRecord: &handler.CreateExpenseRequest{
+				Amount:      1,
+				OccuredAt:   handler.RFC3339Time{Time: time.Time{}},
+				Description: "lost a penny",
+			},
+			inputHeaders: map[string]string{"Content-Type": "application/json"},
+			wantRecord:   &handler.ExpenseResponse{},
+			wantCode:     400,
+			wantHeaders:  map[string]string{},
+		},
+		//
+		// test for invalid description (zero value)
+		{
+			name: "invalid-new-expense-zeroval-description",
+			inputRecord: &handler.CreateExpenseRequest{
+				Amount:      1,
+				OccuredAt:   handler.RFC3339Time{Time: time.Unix(1763391000, 0)},
+				Description: "",
+			},
+			inputHeaders: map[string]string{"Content-Type": "application/json"},
+			wantRecord:   &handler.ExpenseResponse{},
+			wantCode:     400,
+			wantHeaders:  map[string]string{},
+		},
+	}
+
+	for _, testCase := range testTable {
+		t.Run(testCase.name, func(t *testing.T) {
+			// setup mock repo/testService
+			testService := setupMockService(t)
+			testHandler := handler.NewExpanseHandler(testService)
+
+			requestData, err := json.Marshal(testCase.inputRecord)
+			if err != nil {
+				t.Fatalf("unable to marshal input record due to: %s", err)
+			}
+			requestBody := bytes.NewBuffer(requestData)
+
+			// create request
+			request := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "http://example.com/expenses", requestBody)
+			for headerKey, headerVal := range testCase.wantHeaders {
+				request.Header.Add(headerKey, headerVal)
+			}
+
+			// response recorder
+			recorder := httptest.NewRecorder()
+
+			// call handler
+			testHandler.CreateExpense(recorder, request)
+			gotResp := recorder.Result()
+
+			// check response code
+			if gotResp.StatusCode != testCase.wantCode {
+				var gotErr handler.ErrorResponse
+				_ = json.NewDecoder(gotResp.Body).Decode(&gotErr)
+				t.Fatalf("got status HTTP %d, wanted status HTTP %d. error: %v", gotResp.StatusCode, testCase.wantCode, gotErr)
+			}
+
+			// getting headers
+			gotHeaders := gotResp.Header.Clone()
+
+			// check headers
+			for wantHeaderKey, wantHeaderVal := range testCase.wantHeaders {
+				gotHeaderVals, exists := gotHeaders[wantHeaderKey]
+				if !exists {
+					t.Errorf("missing header %q", wantHeaderKey)
+				}
+				if !slices.Contains(gotHeaderVals, wantHeaderVal) {
+					t.Errorf("header %q mismatch: got %v, want %v", wantHeaderKey, gotHeaderVals, wantHeaderVal)
+				}
+			}
+
+			// read body
+			gotBody, err := io.ReadAll(gotResp.Body)
+			if err != nil {
+				t.Fatalf("cannot read response body due to: %s", err)
+			}
+
+			// defering body closure
+			defer func() {
+				err := gotResp.Body.Close()
+				if err != nil {
+					t.Fatalf("unable to close test response due to: %s", err)
+				}
+			}()
+
+			// check response body
+			var gotRecord handler.ExpenseResponse
+			err = json.Unmarshal(gotBody, &gotRecord)
+			if err != nil {
+				t.Fatalf("failed to unmarshal to gotExpenses due to err: %q", err)
+			}
+
+			if gotRecord.ID != testCase.wantRecord.ID {
+				t.Errorf("id mismatch, got: %d, want: %d", gotRecord.ID, testCase.wantRecord.ID)
+			}
+
+			if gotRecord.Amount != testCase.wantRecord.Amount {
+				t.Errorf("amount mismatch, got: %d, want: %d", gotRecord.Amount, testCase.wantRecord.Amount)
+			}
+
+			if !gotRecord.OccuredAt.Equal(testCase.wantRecord.OccuredAt.Time) {
+				t.Errorf("occured at time mismatch, got: %s, want: %s", gotRecord.OccuredAt, testCase.wantRecord.OccuredAt.Time)
+			}
+
+			if gotRecord.Description != testCase.wantRecord.Description {
+				t.Errorf("description mismatch, got: %s, want: %s", gotRecord.Description, testCase.wantRecord.Description)
 			}
 		})
 	}
