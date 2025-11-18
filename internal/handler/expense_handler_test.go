@@ -252,7 +252,7 @@ func TestGetAllExpenses(t *testing.T) {
 
 			// check response code
 			if gotResp.StatusCode != testCase.wantCode {
-				t.Errorf("got status HTTP %d, wanted status HTTP %d", gotResp.StatusCode, testCase.wantCode)
+				t.Fatalf("got status HTTP %d, wanted status HTTP %d", gotResp.StatusCode, testCase.wantCode)
 			}
 
 			// getting headers
