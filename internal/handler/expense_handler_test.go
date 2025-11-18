@@ -166,6 +166,16 @@ func setupMockService(t *testing.T) expenses.Service {
 			ExpenseOccuredAt: time.Unix(1763405881, 0),
 			Description:      "parking payment",
 		},
+		{
+			Amount:           10250,
+			ExpenseOccuredAt: time.Unix(1763409881, 0),
+			Description:      "lunch with collegues",
+		},
+		{
+			Amount:           250,
+			ExpenseOccuredAt: time.Unix(1763419813, 0),
+			Description:      "bus fare",
+		},
 	}
 
 	for _, record := range records {
@@ -206,6 +216,18 @@ func TestGetAllExpenses(t *testing.T) {
 					Amount:           940,
 					ExpenseOccuredAt: time.Unix(1763405881, 0),
 					Description:      "parking payment",
+				},
+				{
+					ID:               4,
+					Amount:           10250,
+					ExpenseOccuredAt: time.Unix(1763409881, 0),
+					Description:      "lunch with collegues",
+				},
+				{
+					ID:               5,
+					Amount:           250,
+					ExpenseOccuredAt: time.Unix(1763419813, 0),
+					Description:      "bus fare",
 				},
 			},
 			wantCode:    200,
