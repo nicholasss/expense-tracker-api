@@ -38,8 +38,8 @@ func (m *mockService) GetAllExpenses(ctx context.Context) ([]*expenses.Expense, 
 	defer m.mux.RUnlock()
 
 	records := make([]*expenses.Expense, 0)
-	for _, record := range m.db {
-		records = append(records, record)
+	for i := 1; i <= m.lastID; i++ {
+		records = append(records, m.db[i])
 	}
 
 	return records, nil
