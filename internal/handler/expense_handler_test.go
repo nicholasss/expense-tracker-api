@@ -970,3 +970,82 @@ func TestUpdateExpenses(t *testing.T) {
 		})
 	}
 }
+
+func TestDeleteExpense(t *testing.T) {
+	testTable := []struct {
+		name     string
+		inputID  int
+		wantCode int
+	}{
+		{
+			name:     "valid-delete-a",
+			inputID:  1,
+			wantCode: 204,
+		},
+		{
+			name:     "valid-delete-b",
+			inputID:  3,
+			wantCode: 204,
+		},
+		{
+			name:     "valid-delete-c",
+			inputID:  5,
+			wantCode: 204,
+		},
+		{
+			name:     "valid-delete-d",
+			inputID:  2,
+			wantCode: 204,
+		},
+		//
+		// invalid id
+		{
+			name:     "invalid-delete-invalid-id-a",
+			inputID:  0,
+			wantCode: 400,
+		},
+		{
+			name:     "invalid-delete-invalid-id-b",
+			inputID:  -1,
+			wantCode: 400,
+		},
+		//
+		// unused id
+		{
+			name:     "invalid-delete-unused-id-a",
+			inputID:  34,
+			wantCode: 404,
+		},
+		{
+			name:     "invalid-delete-unused-id-b",
+			inputID:  32984,
+			wantCode: 404,
+		},
+	}
+
+	for _, testCase := range testTable {
+		t.Run(testCase.name, func(t *testing.T) {
+			// setup mock
+			testService := setupMockService(t)
+			testHandler := handler.NewExpanseHandler(testService)
+
+			// setup request
+			request := httptest.NewRequestWithContext(t.Context(), http.MethodDelete, "http://example.com/expenses", http.NoBody)
+			request.SetPathValue("id", fmt.Sprintf("%d", testCase.inputID))
+
+			// setup recorder
+			recorder := httptest.NewRecorder()
+
+			// perform call to handler
+			testHandler.DeleteExpense(recorder, request)
+			gotResp := recorder.Result()
+
+			// check response code
+			if gotResp.StatusCode != testCase.wantCode {
+				var gotErr handler.ErrorResponse
+				_ = json.NewDecoder(gotResp.Body).Decode(&gotErr)
+				t.Fatalf("got status HTTP %d, wanted status HTTP %d. error: %v", gotResp.StatusCode, testCase.wantCode, gotErr)
+			}
+		})
+	}
+}
