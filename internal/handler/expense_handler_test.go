@@ -93,7 +93,7 @@ func (m *mockService) UpdateExpense(ctx context.Context, id int, occuredAt time.
 	// check for id validity
 	if id <= 0 {
 		return expenses.ErrInvalidID
-	} else if id >= m.lastID {
+	} else if id > m.lastID {
 		return expenses.ErrUnusedID
 	}
 
@@ -119,8 +119,8 @@ func (m *mockService) DeleteExpense(ctx context.Context, id int) error {
 	// check for id validity
 	if id <= 0 {
 		return expenses.ErrInvalidID
-	} else if id >= m.lastID {
-		return expenses.ErrInvalidID
+	} else if id > m.lastID {
+		return expenses.ErrUnusedID
 	}
 
 	// delete record
