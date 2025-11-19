@@ -2,6 +2,8 @@ package expenses
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"slices"
@@ -30,6 +32,10 @@ var (
 
 // ErrInvalidID is used with validation step of GetExpenseByID()
 var ErrInvalidID = fmt.Errorf("id needs to be greater than 0")
+
+// ErrUnusedID is used in the validation step of GetExpenseByID(),
+// for record ID's that structurally valid (above 0) but do not have a valid record
+var ErrUnusedID = fmt.Errorf("id used does not have a valid record")
 
 // ErrInvalidTime is used for SummarizeExpenses() when an invalid range is provided
 type ErrInvalidTime struct {
@@ -127,6 +133,9 @@ func (s *ExpenseService) GetExpenseByID(ctx context.Context, id int) (*Expense, 
 
 	exp, err := s.repo.GetByID(ctx, id)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrUnusedID
+		}
 		return nil, err
 	}
 
