@@ -380,6 +380,16 @@ func TestNewExpense(t *testing.T) {
 			wantHeaders:  map[string]string{},
 		},
 		//
+		// test for invalid request body (different type)
+		{
+			name:         "invalid-new-expense-nil-request-body",
+			inputRecord:  nil,
+			inputHeaders: map[string]string{},
+			wantRecord:   &handler.ExpenseResponse{},
+			wantCode:     400,
+			wantHeaders:  map[string]string{},
+		},
+		//
 		// test for invalid amount (zero value)
 		{
 			name: "invalid-new-expense-zeroval-amount",
