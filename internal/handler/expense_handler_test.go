@@ -388,7 +388,7 @@ func TestNewExpense(t *testing.T) {
 			wantHeaders:  map[string]string{},
 		},
 		//
-		// test for invalid request body (different type)
+		// test for invalid request body
 		{
 			name:         "invalid-new-expense-nil-request-body",
 			inputRecord:  handler.CreateExpenseRequest{},
