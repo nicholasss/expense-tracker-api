@@ -562,14 +562,14 @@ func TestGetExpenseByID(t *testing.T) {
 		//
 		// non-existent id's
 		{
-			name:        "invalid-get-nonexistent-id-a",
+			name:        "invalid-get-unused-id-a",
 			inputID:     6,
 			wantRecord:  handler.ExpenseResponse{},
 			wantCode:    404,
 			wantHeaders: map[string]string{},
 		},
 		{
-			name:        "invalid-get-nonexistent-id-b",
+			name:        "invalid-get-unused-id-b",
 			inputID:     123,
 			wantRecord:  handler.ExpenseResponse{},
 			wantCode:    404,
@@ -578,14 +578,14 @@ func TestGetExpenseByID(t *testing.T) {
 		//
 		// invalid id's
 		{
-			name:        "invalid-get-invalid-id",
+			name:        "invalid-get-invalid-id-a",
 			inputID:     0,
 			wantRecord:  handler.ExpenseResponse{},
 			wantCode:    400,
 			wantHeaders: map[string]string{},
 		},
 		{
-			name:        "invalid-get-invalid-id",
+			name:        "invalid-get-invalid-id-b",
 			inputID:     -1,
 			wantRecord:  handler.ExpenseResponse{},
 			wantCode:    400,
