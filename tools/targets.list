@@ -1,0 +1,12 @@
+GET http://localhost:8080/expenses
+GET http://localhost:8080/expenses/1
+GET http://localhost:8080/expenses/41
+GET http://localhost:8080/expenses/3
+
+POST http://localhost:8080/expenses
+Content-Type: applicaton/json
+@tools/newexpense.json
+
+POST http://localhost:8080/expenses/2
+Content-Type: applicaton/json
+@tools/updateexpense.json
