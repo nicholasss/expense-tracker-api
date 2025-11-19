@@ -79,7 +79,7 @@ func (m *mockService) GetExpenseByID(ctx context.Context, id int) (*expenses.Exp
 	if id <= 0 {
 		return nil, expenses.ErrInvalidID
 	} else if id > m.lastID {
-		return nil, expenses.ErrInvalidID
+		return nil, expenses.ErrUnusedID
 	}
 
 	// get the record
@@ -558,6 +558,38 @@ func TestGetExpenseByID(t *testing.T) {
 			},
 			wantCode:    200,
 			wantHeaders: map[string]string{"Content-Type": "application/json"},
+		},
+		//
+		// non-existent id's
+		{
+			name:        "invalid-get-nonexistent-id-a",
+			inputID:     6,
+			wantRecord:  handler.ExpenseResponse{},
+			wantCode:    404,
+			wantHeaders: map[string]string{},
+		},
+		{
+			name:        "invalid-get-nonexistent-id-b",
+			inputID:     123,
+			wantRecord:  handler.ExpenseResponse{},
+			wantCode:    404,
+			wantHeaders: map[string]string{},
+		},
+		//
+		// invalid id's
+		{
+			name:        "invalid-get-invalid-id",
+			inputID:     0,
+			wantRecord:  handler.ExpenseResponse{},
+			wantCode:    400,
+			wantHeaders: map[string]string{},
+		},
+		{
+			name:        "invalid-get-invalid-id",
+			inputID:     -1,
+			wantRecord:  handler.ExpenseResponse{},
+			wantCode:    400,
+			wantHeaders: map[string]string{},
 		},
 	}
 
