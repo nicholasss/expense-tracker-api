@@ -220,13 +220,13 @@ func responseRecordsAreEqual(t *testing.T, recA, recB handler.ExpenseResponse) {
 func TestGetAllExpenses(t *testing.T) {
 	testTable := []struct {
 		name        string
-		wantRecords []*handler.ExpenseResponse
+		wantRecords []handler.ExpenseResponse
 		wantCode    int
 		wantHeaders map[string]string
 	}{
 		{
 			name: "valid-request",
-			wantRecords: []*handler.ExpenseResponse{
+			wantRecords: []handler.ExpenseResponse{
 				{
 					ID:          1,
 					Amount:      1999,
@@ -324,21 +324,7 @@ func TestGetAllExpenses(t *testing.T) {
 
 			// compare records
 			for i := range gotExpenses {
-				// id
-				if gotExpenses[i].ID != testCase.wantRecords[i].ID {
-					t.Errorf("ID mismatch at index: %d, got %d, want %d", i, gotExpenses[i].ID, testCase.wantRecords[i].ID)
-				}
-
-				// amount
-				if gotExpenses[i].Amount != testCase.wantRecords[i].Amount {
-					t.Errorf("Amount mismatch at index: %d, got %d, want %d", i, gotExpenses[i].Amount, testCase.wantRecords[i].Amount)
-				}
-
-				// occured at
-				if !gotExpenses[i].OccuredAt.Equal(testCase.wantRecords[i].OccuredAt.Time) {
-					t.Logf("DEBUG: record %+v", gotExpenses[i])
-					t.Errorf("ExpenseOccuredAt mismatch at index: %d, got %s, want %s", i, gotExpenses[i].OccuredAt.Time, testCase.wantRecords[i].OccuredAt.Time)
-				}
+				responseRecordsAreEqual(t, gotExpenses[i], testCase.wantRecords[i])
 			}
 		})
 	}
@@ -347,21 +333,21 @@ func TestGetAllExpenses(t *testing.T) {
 func TestNewExpense(t *testing.T) {
 	testTable := []struct {
 		name         string
-		inputRecord  *handler.CreateExpenseRequest
+		inputRecord  handler.CreateExpenseRequest
 		inputHeaders map[string]string
-		wantRecord   *handler.ExpenseResponse
+		wantRecord   handler.ExpenseResponse
 		wantCode     int
 		wantHeaders  map[string]string
 	}{
 		{
 			name: "valid-new-expense-a",
-			inputRecord: &handler.CreateExpenseRequest{
+			inputRecord: handler.CreateExpenseRequest{
 				Amount:      452_39,
 				OccuredAt:   handler.RFC3339Time{Time: time.Unix(1763391611, 0)},
 				Description: "smart automatic litterbox",
 			},
 			inputHeaders: map[string]string{"Content-Type": "application/json"},
-			wantRecord: &handler.ExpenseResponse{
+			wantRecord: handler.ExpenseResponse{
 				ID:          6,
 				Amount:      452_39,
 				OccuredAt:   handler.RFC3339Time{Time: time.Unix(1763391611, 0)},
@@ -372,13 +358,13 @@ func TestNewExpense(t *testing.T) {
 		},
 		{
 			name: "valid-new-expense-b",
-			inputRecord: &handler.CreateExpenseRequest{
+			inputRecord: handler.CreateExpenseRequest{
 				Amount:      1,
 				OccuredAt:   handler.RFC3339Time{Time: time.Unix(1763391000, 0)},
 				Description: "lost a penny",
 			},
 			inputHeaders: map[string]string{"Content-Type": "application/json"},
-			wantRecord: &handler.ExpenseResponse{
+			wantRecord: handler.ExpenseResponse{
 				ID:          6,
 				Amount:      1,
 				OccuredAt:   handler.RFC3339Time{Time: time.Unix(1763391000, 0)},
@@ -391,13 +377,13 @@ func TestNewExpense(t *testing.T) {
 		// test for invalid headers
 		{
 			name: "invalid-new-expense-no-headers",
-			inputRecord: &handler.CreateExpenseRequest{
+			inputRecord: handler.CreateExpenseRequest{
 				Amount:      1,
 				OccuredAt:   handler.RFC3339Time{Time: time.Unix(1763391000, 0)},
 				Description: "lost a penny",
 			},
 			inputHeaders: map[string]string{},
-			wantRecord:   &handler.ExpenseResponse{},
+			wantRecord:   handler.ExpenseResponse{},
 			wantCode:     400,
 			wantHeaders:  map[string]string{},
 		},
@@ -405,9 +391,9 @@ func TestNewExpense(t *testing.T) {
 		// test for invalid request body (different type)
 		{
 			name:         "invalid-new-expense-nil-request-body",
-			inputRecord:  nil,
+			inputRecord:  handler.CreateExpenseRequest{},
 			inputHeaders: map[string]string{},
-			wantRecord:   &handler.ExpenseResponse{},
+			wantRecord:   handler.ExpenseResponse{},
 			wantCode:     400,
 			wantHeaders:  map[string]string{},
 		},
@@ -415,13 +401,13 @@ func TestNewExpense(t *testing.T) {
 		// test for invalid amount (zero value)
 		{
 			name: "invalid-new-expense-zeroval-amount",
-			inputRecord: &handler.CreateExpenseRequest{
+			inputRecord: handler.CreateExpenseRequest{
 				Amount:      0,
 				OccuredAt:   handler.RFC3339Time{Time: time.Unix(1763391000, 0)},
 				Description: "lost a penny",
 			},
 			inputHeaders: map[string]string{"Content-Type": "application/json"},
-			wantRecord:   &handler.ExpenseResponse{},
+			wantRecord:   handler.ExpenseResponse{},
 			wantCode:     400,
 			wantHeaders:  map[string]string{},
 		},
@@ -429,13 +415,13 @@ func TestNewExpense(t *testing.T) {
 		// test for invalid time (zero value)
 		{
 			name: "invalid-new-expense-zeroval-occuredat",
-			inputRecord: &handler.CreateExpenseRequest{
+			inputRecord: handler.CreateExpenseRequest{
 				Amount:      1,
 				OccuredAt:   handler.RFC3339Time{Time: time.Time{}},
 				Description: "lost a penny",
 			},
 			inputHeaders: map[string]string{"Content-Type": "application/json"},
-			wantRecord:   &handler.ExpenseResponse{},
+			wantRecord:   handler.ExpenseResponse{},
 			wantCode:     400,
 			wantHeaders:  map[string]string{},
 		},
@@ -443,13 +429,13 @@ func TestNewExpense(t *testing.T) {
 		// test for invalid description (zero value)
 		{
 			name: "invalid-new-expense-zeroval-description",
-			inputRecord: &handler.CreateExpenseRequest{
+			inputRecord: handler.CreateExpenseRequest{
 				Amount:      1,
 				OccuredAt:   handler.RFC3339Time{Time: time.Unix(1763391000, 0)},
 				Description: "",
 			},
 			inputHeaders: map[string]string{"Content-Type": "application/json"},
-			wantRecord:   &handler.ExpenseResponse{},
+			wantRecord:   handler.ExpenseResponse{},
 			wantCode:     400,
 			wantHeaders:  map[string]string{},
 		},
@@ -522,21 +508,7 @@ func TestNewExpense(t *testing.T) {
 				t.Fatalf("failed to unmarshal to gotExpenses due to err: %q", err)
 			}
 
-			if gotRecord.ID != testCase.wantRecord.ID {
-				t.Errorf("id mismatch, got: %d, want: %d", gotRecord.ID, testCase.wantRecord.ID)
-			}
-
-			if gotRecord.Amount != testCase.wantRecord.Amount {
-				t.Errorf("amount mismatch, got: %d, want: %d", gotRecord.Amount, testCase.wantRecord.Amount)
-			}
-
-			if !gotRecord.OccuredAt.Equal(testCase.wantRecord.OccuredAt.Time) {
-				t.Errorf("occured at time mismatch, got: %s, want: %s", gotRecord.OccuredAt, testCase.wantRecord.OccuredAt.Time)
-			}
-
-			if gotRecord.Description != testCase.wantRecord.Description {
-				t.Errorf("description mismatch, got: %s, want: %s", gotRecord.Description, testCase.wantRecord.Description)
-			}
+			responseRecordsAreEqual(t, gotRecord, testCase.wantRecord)
 		})
 	}
 }
@@ -545,7 +517,7 @@ func TestGetExpenseByID(t *testing.T) {
 	testTable := []struct {
 		name        string
 		inputID     int
-		wantRecord  *handler.ExpenseResponse
+		wantRecord  handler.ExpenseResponse
 		wantCode    int
 		wantHeaders map[string]string
 	}{
@@ -554,7 +526,7 @@ func TestGetExpenseByID(t *testing.T) {
 		{
 			name:    "valid-get-first-id",
 			inputID: 1,
-			wantRecord: &handler.ExpenseResponse{
+			wantRecord: handler.ExpenseResponse{
 				ID:          1,
 				Amount:      1999,
 				OccuredAt:   handler.RFC3339Time{Time: time.Unix(1763398641, 0)},
@@ -566,7 +538,7 @@ func TestGetExpenseByID(t *testing.T) {
 		{
 			name:    "valid-get-third-id",
 			inputID: 3,
-			wantRecord: &handler.ExpenseResponse{
+			wantRecord: handler.ExpenseResponse{
 				ID:          3,
 				Amount:      940,
 				OccuredAt:   handler.RFC3339Time{Time: time.Unix(1763405881, 0)},
@@ -633,7 +605,7 @@ func TestGetExpenseByID(t *testing.T) {
 				t.Fatalf("unable to unmarshal body of response due to: %s", err)
 			}
 
-			responseRecordsAreEqual(t, gotRecord, *testCase.wantRecord)
+			responseRecordsAreEqual(t, gotRecord, testCase.wantRecord)
 		})
 	}
 }
