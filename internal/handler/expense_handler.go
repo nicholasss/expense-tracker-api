@@ -319,20 +319,20 @@ func (h *ExpenseHandler) GetExpenseByID(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		// checking for invalid ID or an ID that does not exist
 		if errors.Is(err, expenses.ErrInvalidID) {
-			h.sendErrors(w, 404, []string{err.Error()})
+			h.sendErrors(w, http.StatusBadRequest, []string{err.Error()})
 			return
 		}
-		if errors.Is(err, sql.ErrNoRows) {
-			h.sendErrors(w, 404, []string{"id is invalid"})
+		if errors.Is(err, expenses.ErrUnusedID) || errors.Is(err, sql.ErrNoRows) {
+			h.sendErrors(w, http.StatusNotFound, []string{err.Error()})
 			return
 		}
 		// any other errors
-		h.sendErrors(w, 500, []string{})
+		h.sendErrors(w, http.StatusInternalServerError, []string{})
 		return
 	}
 
 	responsePayload := expenseToResponse(exp)
-	h.sendJSON(w, 200, responsePayload)
+	h.sendJSON(w, http.StatusOK, responsePayload)
 }
 
 // UpdateExpense ...
