@@ -195,6 +195,28 @@ func setupMockService(t *testing.T) expenses.Service {
 	return s
 }
 
+// Helper functions
+
+func responseRecordsAreEqual(t *testing.T, recA, recB handler.ExpenseResponse) {
+	t.Helper()
+
+	if recA.ID != recB.ID {
+		t.Errorf("id mismatch, got: %d, want: %d", recA.ID, recB.ID)
+	}
+
+	if recA.Amount != recB.Amount {
+		t.Errorf("amount mismatch, got: %d, want: %d", recA.Amount, recB.Amount)
+	}
+
+	if !recA.OccuredAt.Equal(recB.OccuredAt.Time) {
+		t.Errorf("occured at time mismatch, got: %s, want: %s", recA.OccuredAt, recB.OccuredAt.Time)
+	}
+
+	if recA.Description != recB.Description {
+		t.Errorf("description mismatch, got: %s, want: %s", recA.Description, recB.Description)
+	}
+}
+
 func TestGetAllExpenses(t *testing.T) {
 	testTable := []struct {
 		name        string
@@ -515,6 +537,103 @@ func TestNewExpense(t *testing.T) {
 			if gotRecord.Description != testCase.wantRecord.Description {
 				t.Errorf("description mismatch, got: %s, want: %s", gotRecord.Description, testCase.wantRecord.Description)
 			}
+		})
+	}
+}
+
+func TestGetExpenseByID(t *testing.T) {
+	testTable := []struct {
+		name        string
+		inputID     int
+		wantRecord  *handler.ExpenseResponse
+		wantCode    int
+		wantHeaders map[string]string
+	}{
+		//
+		// valid getting correct ID's of records
+		{
+			name:    "valid-get-first-id",
+			inputID: 1,
+			wantRecord: &handler.ExpenseResponse{
+				ID:          1,
+				Amount:      1999,
+				OccuredAt:   handler.RFC3339Time{Time: time.Unix(1763398641, 0)},
+				Description: "movie tickets",
+			},
+			wantCode:    200,
+			wantHeaders: map[string]string{"Content-Type": "application/json"},
+		},
+		{
+			name:    "valid-get-third-id",
+			inputID: 3,
+			wantRecord: &handler.ExpenseResponse{
+				ID:          3,
+				Amount:      940,
+				OccuredAt:   handler.RFC3339Time{Time: time.Unix(1763405881, 0)},
+				Description: "parking payment",
+			},
+			wantCode:    200,
+			wantHeaders: map[string]string{"Content-Type": "application/json"},
+		},
+	}
+
+	for _, testCase := range testTable {
+		t.Run(testCase.name, func(t *testing.T) {
+			// setup mock repo/testService
+			testService := setupMockService(t)
+			testHandler := handler.NewExpanseHandler(testService)
+
+			// setup request
+			request := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "http://example.com/expenses", http.NoBody)
+			request.SetPathValue("id", fmt.Sprintf("%d", testCase.inputID))
+			// response recorder
+			recorder := httptest.NewRecorder()
+
+			// call handler
+			testHandler.GetExpenseByID(recorder, request)
+			gotResp := recorder.Result()
+
+			// check response code
+			if gotResp.StatusCode != testCase.wantCode {
+				var gotErr handler.ErrorResponse
+				_ = json.NewDecoder(gotResp.Body).Decode(&gotErr)
+				t.Fatalf("got status HTTP %d, wanted status HTTP %d. error: %v", gotResp.StatusCode, testCase.wantCode, gotErr)
+			}
+
+			// getting headers
+			gotHeaders := gotResp.Header.Clone()
+
+			// check headers
+			for wantHeaderKey, wantHeaderVal := range testCase.wantHeaders {
+				gotHeaderVals, exists := gotHeaders[wantHeaderKey]
+				if !exists {
+					t.Errorf("missing header %q", wantHeaderKey)
+				}
+				if !slices.Contains(gotHeaderVals, wantHeaderVal) {
+					t.Errorf("header %q mismatch: got %v, want %v", wantHeaderKey, gotHeaderVals, wantHeaderVal)
+				}
+			}
+
+			// read body
+			gotBody, err := io.ReadAll(gotResp.Body)
+			if err != nil {
+				t.Fatalf("cannot read response body due to: %s", err)
+			}
+
+			// defering body closure
+			defer func() {
+				err := gotResp.Body.Close()
+				if err != nil {
+					t.Fatalf("unable to close test response due to: %s", err)
+				}
+			}()
+
+			var gotRecord handler.ExpenseResponse
+			if err = json.Unmarshal(gotBody, &gotRecord); err != nil {
+				t.Fatalf("unable to unmarshal body of response due to: %s", err)
+			}
+
+			responseRecordsAreEqual(t, gotRecord, *testCase.wantRecord)
 		})
 	}
 }
