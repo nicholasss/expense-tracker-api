@@ -170,6 +170,9 @@ func (s *ExpenseService) UpdateExpense(ctx context.Context, id int, occuredAt ti
 	}
 
 	if err := s.repo.Update(ctx, exp); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrUnusedID
+		}
 		return err
 	}
 

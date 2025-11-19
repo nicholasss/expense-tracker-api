@@ -389,6 +389,9 @@ func (h *ExpenseHandler) UpdateExpense(w http.ResponseWriter, r *http.Request) {
 			h.sendErrors(w, http.StatusBadRequest, []string{err.Error()})
 			return
 		}
+		if errors.Is(err, expenses.ErrUnusedID) {
+			h.sendErrors(w, http.StatusNotFound, []string{err.Error()})
+		}
 
 		// generic errors
 		h.sendErrors(w, http.StatusInternalServerError, []string{err.Error()})
@@ -396,7 +399,7 @@ func (h *ExpenseHandler) UpdateExpense(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// otherwise everything went perfect
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // DeleteExpense ...
