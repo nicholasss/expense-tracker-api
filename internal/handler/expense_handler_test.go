@@ -78,7 +78,7 @@ func (m *mockService) GetExpenseByID(ctx context.Context, id int) (*expenses.Exp
 	// check for id validity
 	if id <= 0 {
 		return nil, expenses.ErrInvalidID
-	} else if id >= m.lastID {
+	} else if id > m.lastID {
 		return nil, expenses.ErrInvalidID
 	}
 
@@ -543,6 +543,18 @@ func TestGetExpenseByID(t *testing.T) {
 				Amount:      940,
 				OccuredAt:   handler.RFC3339Time{Time: time.Unix(1763405881, 0)},
 				Description: "parking payment",
+			},
+			wantCode:    200,
+			wantHeaders: map[string]string{"Content-Type": "application/json"},
+		},
+		{
+			name:    "valid-get-fifth-id",
+			inputID: 5,
+			wantRecord: handler.ExpenseResponse{
+				ID:          5,
+				Amount:      250,
+				OccuredAt:   handler.RFC3339Time{Time: time.Unix(1763419813, 0)},
+				Description: "bus fare",
 			},
 			wantCode:    200,
 			wantHeaders: map[string]string{"Content-Type": "application/json"},
