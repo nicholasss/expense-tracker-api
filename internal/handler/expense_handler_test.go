@@ -653,3 +653,320 @@ func TestGetExpenseByID(t *testing.T) {
 		})
 	}
 }
+
+func TestUpdateExpenses(t *testing.T) {
+	testTable := []struct {
+		name         string
+		inputHeaders map[string]string
+		inputRecord  handler.UpdateExpenseRequest
+		wantCode     int
+	}{
+		//
+		// no updates to record
+		{
+			name:         "valid-record-update-identical-info-a",
+			inputHeaders: map[string]string{"Content-Type": "application/json"},
+			inputRecord: handler.UpdateExpenseRequest{
+				ID: 1,
+				CreateExpenseRequest: handler.CreateExpenseRequest{
+					OccuredAt:   handler.RFC3339Time{Time: time.Unix(1763398641, 0)},
+					Description: "movie tickets",
+					Amount:      1999,
+				},
+			},
+			wantCode: 204,
+		},
+		{
+			name:         "valid-record-update-identical-info-b",
+			inputHeaders: map[string]string{"Content-Type": "application/json"},
+			inputRecord: handler.UpdateExpenseRequest{
+				ID: 2,
+				CreateExpenseRequest: handler.CreateExpenseRequest{
+					OccuredAt:   handler.RFC3339Time{Time: time.Unix(1763402231, 0)},
+					Description: "big fancy dinner",
+					Amount:      28089,
+				},
+			},
+			wantCode: 204,
+		},
+		//
+		// amount updates on records
+		{
+			name:         "valid-record-update-lower-amounts-a",
+			inputHeaders: map[string]string{"Content-Type": "application/json"},
+			inputRecord: handler.UpdateExpenseRequest{
+				ID: 1,
+				CreateExpenseRequest: handler.CreateExpenseRequest{
+					OccuredAt:   handler.RFC3339Time{Time: time.Unix(1763398641, 0)},
+					Description: "movie tickets",
+					Amount:      1,
+				},
+			},
+			wantCode: 204,
+		},
+		{
+			name:         "valid-record-update-lower-amounts-b",
+			inputHeaders: map[string]string{"Content-Type": "application/json"},
+			inputRecord: handler.UpdateExpenseRequest{
+				ID: 2,
+				CreateExpenseRequest: handler.CreateExpenseRequest{
+					OccuredAt:   handler.RFC3339Time{Time: time.Unix(1763402231, 0)},
+					Description: "big fancy dinner",
+					Amount:      2,
+				},
+			},
+			wantCode: 204,
+		},
+		//
+		// occured at updates on record
+		{
+			name:         "valid-record-update-new-time-a",
+			inputHeaders: map[string]string{"Content-Type": "application/json"},
+			inputRecord: handler.UpdateExpenseRequest{
+				ID: 1,
+				CreateExpenseRequest: handler.CreateExpenseRequest{
+					OccuredAt:   handler.RFC3339Time{Time: time.Unix(1763384641, 0)},
+					Description: "movie tickets",
+					Amount:      1999,
+				},
+			},
+			wantCode: 204,
+		},
+		{
+			name:         "valid-record-update-new-time-b",
+			inputHeaders: map[string]string{"Content-Type": "application/json"},
+			inputRecord: handler.UpdateExpenseRequest{
+				ID: 2,
+				CreateExpenseRequest: handler.CreateExpenseRequest{
+					OccuredAt:   handler.RFC3339Time{Time: time.Unix(1763409231, 0)},
+					Description: "big fancy dinner",
+					Amount:      28089,
+				},
+			},
+			wantCode: 204,
+		},
+		//
+		// description updates on record
+		{
+			name:         "valid-record-update-new-description-a",
+			inputHeaders: map[string]string{"Content-Type": "application/json"},
+			inputRecord: handler.UpdateExpenseRequest{
+				ID: 1,
+				CreateExpenseRequest: handler.CreateExpenseRequest{
+					OccuredAt:   handler.RFC3339Time{Time: time.Unix(1763398641, 0)},
+					Description: "movie tickets for just me",
+					Amount:      1999,
+				},
+			},
+			wantCode: 204,
+		},
+		{
+			name:         "valid-record-update-new-description-b",
+			inputHeaders: map[string]string{"Content-Type": "application/json"},
+			inputRecord: handler.UpdateExpenseRequest{
+				ID: 2,
+				CreateExpenseRequest: handler.CreateExpenseRequest{
+					OccuredAt:   handler.RFC3339Time{Time: time.Unix(1763402231, 0)},
+					Description: "small demure dinner",
+					Amount:      28089,
+				},
+			},
+			wantCode: 204,
+		},
+		//
+		// invalid id check
+		{
+			name:         "invalid-update-invalid-id-a",
+			inputHeaders: map[string]string{"Content-Type": "application/json"},
+			inputRecord: handler.UpdateExpenseRequest{
+				ID: 0,
+				CreateExpenseRequest: handler.CreateExpenseRequest{
+					OccuredAt:   handler.RFC3339Time{Time: time.Unix(1763398641, 0)},
+					Description: "movie tickets",
+					Amount:      1999,
+				},
+			},
+			wantCode: 400,
+		},
+		{
+			name:         "invalid-update-invalid-id-b",
+			inputHeaders: map[string]string{"Content-Type": "application/json"},
+			inputRecord: handler.UpdateExpenseRequest{
+				ID: -1,
+				CreateExpenseRequest: handler.CreateExpenseRequest{
+					OccuredAt:   handler.RFC3339Time{Time: time.Unix(1763402231, 0)},
+					Description: "big fancy dinner",
+					Amount:      28089,
+				},
+			},
+			wantCode: 400,
+		},
+		//
+		// unused id check
+		{
+			name:         "invalid-update-unused-id-a",
+			inputHeaders: map[string]string{"Content-Type": "application/json"},
+			inputRecord: handler.UpdateExpenseRequest{
+				ID: 10,
+				CreateExpenseRequest: handler.CreateExpenseRequest{
+					OccuredAt:   handler.RFC3339Time{Time: time.Unix(1763398641, 0)},
+					Description: "movie tickets",
+					Amount:      1999,
+				},
+			},
+			wantCode: 404,
+		},
+		{
+			name:         "invalid-update-unused-id-b",
+			inputHeaders: map[string]string{"Content-Type": "application/json"},
+			inputRecord: handler.UpdateExpenseRequest{
+				ID: 1245,
+				CreateExpenseRequest: handler.CreateExpenseRequest{
+					OccuredAt:   handler.RFC3339Time{Time: time.Unix(1763402231, 0)},
+					Description: "big fancy dinner",
+					Amount:      28089,
+				},
+			},
+			wantCode: 404,
+		},
+		//
+		// bad occured at time
+		{
+			name:         "invalid-update-invalid-time-a",
+			inputHeaders: map[string]string{"Content-Type": "application/json"},
+			inputRecord: handler.UpdateExpenseRequest{
+				ID: 1,
+				CreateExpenseRequest: handler.CreateExpenseRequest{
+					OccuredAt:   handler.RFC3339Time{},
+					Description: "movie tickets",
+					Amount:      1999,
+				},
+			},
+			wantCode: 400,
+		},
+		{
+			name:         "invalid-update-invalid-time-b",
+			inputHeaders: map[string]string{"Content-Type": "application/json"},
+			inputRecord: handler.UpdateExpenseRequest{
+				ID: 2,
+				CreateExpenseRequest: handler.CreateExpenseRequest{
+					Description: "big fancy dinner",
+					Amount:      28089,
+				},
+			},
+			wantCode: 400,
+		},
+		//
+		// bad update invalid description
+		{
+			name:         "invalid-update-invalid-description-a",
+			inputHeaders: map[string]string{"Content-Type": "application/json"},
+			inputRecord: handler.UpdateExpenseRequest{
+				ID: 1,
+				CreateExpenseRequest: handler.CreateExpenseRequest{
+					OccuredAt:   handler.RFC3339Time{Time: time.Unix(1763398641, 0)},
+					Description: "",
+					Amount:      1999,
+				},
+			},
+			wantCode: 400,
+		},
+		{
+			name:         "invalid-update-invalid-description-a",
+			inputHeaders: map[string]string{"Content-Type": "application/json"},
+			inputRecord: handler.UpdateExpenseRequest{
+				ID: 2,
+				CreateExpenseRequest: handler.CreateExpenseRequest{
+					OccuredAt: handler.RFC3339Time{Time: time.Unix(1763402231, 0)},
+					Amount:    28089,
+				},
+			},
+			wantCode: 400,
+		},
+		//
+		// bad update invalid amount
+		{
+			name:         "invalid-update-invalid-amount-a",
+			inputHeaders: map[string]string{"Content-Type": "application/json"},
+			inputRecord: handler.UpdateExpenseRequest{
+				ID: 1,
+				CreateExpenseRequest: handler.CreateExpenseRequest{
+					OccuredAt:   handler.RFC3339Time{Time: time.Unix(1763398641, 0)},
+					Description: "movie tickets",
+				},
+			},
+			wantCode: 400,
+		},
+		{
+			name:         "invalid-update-invalid-amount-b",
+			inputHeaders: map[string]string{"Content-Type": "application/json"},
+			inputRecord: handler.UpdateExpenseRequest{
+				ID: 2,
+				CreateExpenseRequest: handler.CreateExpenseRequest{
+					OccuredAt:   handler.RFC3339Time{Time: time.Unix(1763402231, 0)},
+					Description: "big fancy dinner",
+					Amount:      0,
+				},
+			},
+			wantCode: 400,
+		},
+		//
+		// bad update, no body
+		{
+			name:         "invalid-update-invalid-amount",
+			inputHeaders: map[string]string{"Content-Type": "application/json"},
+			inputRecord:  handler.UpdateExpenseRequest{},
+			wantCode:     400,
+		},
+		//
+		// bad update, no headers
+		{
+			name:         "invalid-update-no-headers",
+			inputHeaders: map[string]string{},
+			inputRecord: handler.UpdateExpenseRequest{
+				ID: 2,
+				CreateExpenseRequest: handler.CreateExpenseRequest{
+					OccuredAt:   handler.RFC3339Time{Time: time.Unix(1763402231, 0)},
+					Description: "big fancy dinner",
+					Amount:      1999,
+				},
+			},
+			wantCode: 400,
+		},
+	}
+
+	for _, testCase := range testTable {
+		t.Run(testCase.name, func(t *testing.T) {
+			// setup
+			testService := setupMockService(t)
+			testHandler := handler.NewExpanseHandler(testService)
+
+			// prepare body
+			requestData, err := json.Marshal(testCase.inputRecord)
+			if err != nil {
+				t.Fatalf("unable to marshal input record due to: %s", err)
+			}
+			requestBody := bytes.NewBuffer(requestData)
+
+			// setup request
+			request := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "http://example.com/expenses", requestBody)
+			for headerKey, headerVal := range testCase.inputHeaders {
+				request.Header.Add(headerKey, headerVal)
+			}
+
+			// create recorder
+			recorder := httptest.NewRecorder()
+
+			// perform request
+			testHandler.UpdateExpense(recorder, request)
+			gotResp := recorder.Result()
+
+			// check response code
+			if gotResp.StatusCode != testCase.wantCode {
+				var gotErr handler.ErrorResponse
+				_ = json.NewDecoder(gotResp.Body).Decode(&gotErr)
+				t.Fatalf("got status HTTP %d, wanted status HTTP %d. error: %v", gotResp.StatusCode, testCase.wantCode, gotErr)
+			}
+		})
+	}
+}
