@@ -94,7 +94,7 @@ func (m *mockService) UpdateExpense(ctx context.Context, id int, occuredAt time.
 	if id <= 0 {
 		return expenses.ErrInvalidID
 	} else if id >= m.lastID {
-		return expenses.ErrInvalidID
+		return expenses.ErrUnusedID
 	}
 
 	// update record
