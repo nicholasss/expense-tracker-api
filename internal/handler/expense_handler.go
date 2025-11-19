@@ -172,7 +172,7 @@ func (h *ExpenseHandler) headersAreValid(w http.ResponseWriter, r *http.Request)
 		return true
 	}
 
-	h.sendErrors(w, 400, issues)
+	h.sendErrors(w, http.StatusBadRequest, issues)
 	return false
 }
 
@@ -181,7 +181,7 @@ func (h *ExpenseHandler) sendJSON(w http.ResponseWriter, status int, responsePay
 	// marshal response payload
 	respData, err := json.Marshal(responsePayload)
 	if err != nil {
-		h.sendErrors(w, 500, []string{"database error"})
+		h.sendErrors(w, http.StatusInternalServerError, []string{"database error"})
 		return
 	}
 
@@ -202,6 +202,13 @@ func (h *ExpenseHandler) sendJSON(w http.ResponseWriter, status int, responsePay
 
 // sendErrors will create and write the provided error code to the provided http.ResponseWriter.
 func (h *ExpenseHandler) sendErrors(w http.ResponseWriter, code int, issues []string) {
+	// guard against invalid status codes
+	if statusText := http.StatusText(code); statusText == "" {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	// guard against nil or empty slices
 	if issues == nil {
 		issues = make([]string, 0)
 	}
@@ -209,6 +216,7 @@ func (h *ExpenseHandler) sendErrors(w http.ResponseWriter, code int, issues []st
 		issues = append(issues, http.StatusText(code))
 	}
 
+	// marshal to bytes
 	payload := &ErrorResponse{
 		HTTPCode: code,
 		Issues:   issues,
@@ -218,6 +226,7 @@ func (h *ExpenseHandler) sendErrors(w http.ResponseWriter, code int, issues []st
 		return
 	}
 
+	// send to client
 	w.WriteHeader(code)
 	bytesWritten, err := w.Write(issuesData)
 	if err != nil {
@@ -236,7 +245,7 @@ func (h *ExpenseHandler) sendErrors(w http.ResponseWriter, code int, issues []st
 func (h *ExpenseHandler) GetAllExpenses(w http.ResponseWriter, r *http.Request) {
 	expRecords, err := h.Service.GetAllExpenses(r.Context())
 	if err != nil {
-		h.sendErrors(w, 500, []string{"database error"})
+		h.sendErrors(w, http.StatusInternalServerError, []string{"database error"})
 		return
 	}
 
@@ -245,7 +254,7 @@ func (h *ExpenseHandler) GetAllExpenses(w http.ResponseWriter, r *http.Request) 
 		responsePayload = append(responsePayload, *expenseToResponse(exp))
 	}
 
-	h.sendJSON(w, 200, responsePayload)
+	h.sendJSON(w, http.StatusOK, responsePayload)
 }
 
 // CreateExpense handles 'POST /expenses'
@@ -258,7 +267,7 @@ func (h *ExpenseHandler) CreateExpense(w http.ResponseWriter, r *http.Request) {
 	var reqBody *CreateExpenseRequest
 	err := json.NewDecoder(r.Body).Decode(&reqBody)
 	if err != nil {
-		h.sendErrors(w, 400, []string{"unable to decode body"})
+		h.sendErrors(w, http.StatusBadRequest, []string{"unable to decode body"})
 		return
 	}
 
@@ -266,14 +275,14 @@ func (h *ExpenseHandler) CreateExpense(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		err = r.Body.Close()
 		if err != nil {
-			h.sendErrors(w, 500, []string{})
+			h.sendErrors(w, http.StatusInternalServerError, []string{})
 		}
 	}()
 
 	// validation of structure
 	issues, isValid := reqBody.validate()
 	if !isValid {
-		h.sendErrors(w, 400, issues)
+		h.sendErrors(w, http.StatusBadRequest, issues)
 		return
 	}
 
@@ -345,7 +354,7 @@ func (h *ExpenseHandler) UpdateExpense(w http.ResponseWriter, r *http.Request) {
 	var reqBody UpdateExpenseRequest
 	err := json.NewDecoder(r.Body).Decode(&reqBody)
 	if err != nil {
-		h.sendErrors(w, 400, []string{"unable to decode body"})
+		h.sendErrors(w, http.StatusBadRequest, []string{"unable to decode body"})
 		return
 	}
 
@@ -353,14 +362,14 @@ func (h *ExpenseHandler) UpdateExpense(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		err = r.Body.Close()
 		if err != nil {
-			h.sendErrors(w, 500, []string{})
+			h.sendErrors(w, http.StatusInternalServerError, []string{})
 		}
 	}()
 
 	// validatin of request body
 	issues, isValid := reqBody.validate()
 	if !isValid {
-		h.sendErrors(w, 400, issues)
+		h.sendErrors(w, http.StatusBadRequest, issues)
 		return
 	}
 
@@ -382,7 +391,7 @@ func (h *ExpenseHandler) UpdateExpense(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// generic errors
-		h.sendErrors(w, 500, []string{err.Error()})
+		h.sendErrors(w, http.StatusInternalServerError, []string{err.Error()})
 		return
 	}
 
