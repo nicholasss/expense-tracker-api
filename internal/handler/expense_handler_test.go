@@ -455,7 +455,7 @@ func TestNewExpense(t *testing.T) {
 
 			// create request
 			request := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "http://example.com/expenses", requestBody)
-			for headerKey, headerVal := range testCase.wantHeaders {
+			for headerKey, headerVal := range testCase.inputHeaders {
 				request.Header.Add(headerKey, headerVal)
 			}
 
