@@ -198,42 +198,42 @@ func setupMockService(t *testing.T) expenses.Service {
 func TestGetAllExpenses(t *testing.T) {
 	testTable := []struct {
 		name        string
-		wantRecords []*expenses.Expense
+		wantRecords []*handler.ExpenseResponse
 		wantCode    int
 		wantHeaders map[string]string
 	}{
 		{
 			name: "valid-request",
-			wantRecords: []*expenses.Expense{
+			wantRecords: []*handler.ExpenseResponse{
 				{
-					ID:               1,
-					Amount:           1999,
-					ExpenseOccuredAt: time.Unix(1763398641, 0),
-					Description:      "movie tickets",
+					ID:          1,
+					Amount:      1999,
+					OccuredAt:   handler.RFC3339Time{Time: time.Unix(1763398641, 0)},
+					Description: "movie tickets",
 				},
 				{
-					ID:               2,
-					Amount:           28089,
-					ExpenseOccuredAt: time.Unix(1763402231, 0),
-					Description:      "big fancy dinner",
+					ID:          2,
+					Amount:      28089,
+					OccuredAt:   handler.RFC3339Time{Time: time.Unix(1763402231, 0)},
+					Description: "big fancy dinner",
 				},
 				{
-					ID:               3,
-					Amount:           940,
-					ExpenseOccuredAt: time.Unix(1763405881, 0),
-					Description:      "parking payment",
+					ID:          3,
+					Amount:      940,
+					OccuredAt:   handler.RFC3339Time{Time: time.Unix(1763405881, 0)},
+					Description: "parking payment",
 				},
 				{
-					ID:               4,
-					Amount:           10250,
-					ExpenseOccuredAt: time.Unix(1763409881, 0),
-					Description:      "lunch with collegues",
+					ID:          4,
+					Amount:      10250,
+					OccuredAt:   handler.RFC3339Time{Time: time.Unix(1763409881, 0)},
+					Description: "lunch with collegues",
 				},
 				{
-					ID:               5,
-					Amount:           250,
-					ExpenseOccuredAt: time.Unix(1763419813, 0),
-					Description:      "bus fare",
+					ID:          5,
+					Amount:      250,
+					OccuredAt:   handler.RFC3339Time{Time: time.Unix(1763419813, 0)},
+					Description: "bus fare",
 				},
 			},
 			wantCode:    200,
@@ -313,9 +313,9 @@ func TestGetAllExpenses(t *testing.T) {
 				}
 
 				// occured at
-				if !gotExpenses[i].OccuredAt.Equal(testCase.wantRecords[i].ExpenseOccuredAt) {
+				if !gotExpenses[i].OccuredAt.Equal(testCase.wantRecords[i].OccuredAt.Time) {
 					t.Logf("DEBUG: record %+v", gotExpenses[i])
-					t.Errorf("ExpenseOccuredAt mismatch at index: %d, got %s, want %s", i, gotExpenses[i].OccuredAt.Time, testCase.wantRecords[i].ExpenseOccuredAt)
+					t.Errorf("ExpenseOccuredAt mismatch at index: %d, got %s, want %s", i, gotExpenses[i].OccuredAt.Time, testCase.wantRecords[i].OccuredAt.Time)
 				}
 			}
 		})
