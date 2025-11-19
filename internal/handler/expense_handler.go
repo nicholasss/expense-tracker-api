@@ -418,6 +418,10 @@ func (h *ExpenseHandler) DeleteExpense(w http.ResponseWriter, r *http.Request) {
 			h.sendErrors(w, http.StatusBadRequest, []string{err.Error()})
 			return
 		}
+		if errors.Is(err, expenses.ErrUnusedID) {
+			h.sendErrors(w, http.StatusNotFound, []string{err.Error()})
+			return
+		}
 
 		// generic server error
 		h.sendErrors(w, http.StatusInternalServerError, []string{})

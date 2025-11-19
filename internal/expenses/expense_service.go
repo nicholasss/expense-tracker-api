@@ -185,6 +185,11 @@ func (s *ExpenseService) DeleteExpense(ctx context.Context, id int) error {
 	}
 
 	if err := s.repo.Delete(ctx, id); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrUnusedID
+		}
+
+		// otherwise other error
 		return err
 	}
 
