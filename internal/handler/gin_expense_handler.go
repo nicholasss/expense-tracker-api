@@ -14,7 +14,7 @@ import (
 // === Package Variables
 
 var (
-	ErrMissingHeader = fmt.Errorf("header is missing")
+	ErrMissingHeader = fmt.Errorf("one or more header(s) are missing")
 	ErrInvalidID     = fmt.Errorf("provided id is invalid")
 )
 
@@ -46,12 +46,6 @@ func NewGinHandler(service expenses.Service) *GinHandler {
 }
 
 func (h *GinHandler) GetAllExpenses(c *gin.Context) {
-	// contentType := c.GetHeader("Content-Type")
-	// if contentType != "application/json" {
-	// 	c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": ErrMissingHeader})
-	// 	return
-	// }
-
 	// get data
 	records, err := h.Service.GetAllExpenses(c.Request.Context())
 	if err != nil {
@@ -93,4 +87,35 @@ func (h *GinHandler) GetExpenseByID(c *gin.Context) {
 
 	// send reccord
 	c.JSON(http.StatusOK, expenseToResponse(record))
+}
+
+func (h *GinHandler) CreateExpense(c *gin.Context) {
+	contentType := c.GetHeader("Content-Type")
+	if contentType != "application/json" {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Bad Request: " + ErrMissingHeader.Error()})
+		return
+	}
+
+	// request body bind
+	var reqBody CreateExpenseRequest
+	err := c.ShouldBindJSON(&reqBody)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Bad Request: " + err.Error()})
+		return
+	}
+
+	// send to service layer
+	newRecord, err := h.Service.NewExpense(c.Request.Context(), reqBody.OccuredAt.Time, reqBody.Description, reqBody.Amount)
+	if err != nil {
+		// checking for service errors
+		if errors.Is(err, expenses.ErrInvalidAmount) || errors.Is(err, expenses.ErrInvalidOccuredAtTime) {
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Bad Request: " + err.Error()})
+			return
+		}
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+		return
+	}
+
+	// return record
+	c.JSON(http.StatusCreated, expenseToResponse(newRecord))
 }
