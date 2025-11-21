@@ -3,7 +3,6 @@ package handler
 import (
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 
@@ -73,7 +72,6 @@ func (h *GinHandler) GetExpenseByID(c *gin.Context) {
 	// get the record
 	record, err := h.Service.GetExpenseByID(c.Request.Context(), idInt)
 	if err != nil {
-		log.Printf("error: %s", err)
 		// specifically respond 404 if id is not a record
 		if errors.Is(err, expenses.ErrUnusedID) {
 			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Not Found: " + err.Error()})
@@ -126,7 +124,6 @@ func (h *GinHandler) UpdateExpense(c *gin.Context) {
 	// send to service layer
 	err = h.Service.UpdateExpense(c.Request.Context(), reqBody.ID, reqBody.OccuredAt.Time, reqBody.Description, reqBody.Amount)
 	if err != nil {
-		log.Printf("error of: %v", err)
 		if errors.Is(err, expenses.ErrInvalidAmount) || errors.Is(err, expenses.ErrInvalidOccuredAtTime) {
 			// service error
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Bad Request: " + err.Error()})
