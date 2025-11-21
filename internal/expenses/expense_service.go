@@ -151,7 +151,7 @@ func (s *ExpenseService) UpdateExpense(ctx context.Context, id int, occuredAt ti
 	}
 
 	if err := s.repo.Update(ctx, exp); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) || errors.Is(err, ErrNoRowsUpdated) {
 			return ErrUnusedID
 		}
 		return err
@@ -166,7 +166,7 @@ func (s *ExpenseService) DeleteExpense(ctx context.Context, id int) error {
 	}
 
 	if err := s.repo.Delete(ctx, id); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) || errors.Is(err, ErrNoRowsDeleted) {
 			return ErrUnusedID
 		}
 
