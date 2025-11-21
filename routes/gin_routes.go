@@ -14,7 +14,7 @@ func SetupGinRoutes(service expenses.Service) *gin.Engine {
 	r.GET("/expenses", h.GetAllExpenses)
 	r.GET("/expenses/:id", h.GetExpenseByID)
 	r.POST("/expenses", h.CreateExpense)
-	// put expenses
+	r.PUT("/expenses", h.UpdateExpense)
 	// delete expenses
 
 	return r

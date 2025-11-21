@@ -63,7 +63,7 @@ func (t *RFC3339Time) MarshalJSON() ([]byte, error) {
 type CreateExpenseRequest struct {
 	OccuredAt   RFC3339Time `json:"occured_at"`
 	Description string      `json:"description" binding:"required"`
-	Amount      int64       `json:"amount" binding:"required"`
+	Amount      int64       `json:"amount" binding:"required,gt=0"`
 }
 
 // validate performs structural/syntactic validation
@@ -95,7 +95,7 @@ func (c *CreateExpenseRequest) validate() ([]string, bool) {
 
 // UpdateExpenseRequest is utilized specifically for the UpdateExpense endpoint: PUT /expense
 type UpdateExpenseRequest struct {
-	ID int `json:"id"`
+	ID int `json:"id" binding:"required"`
 	CreateExpenseRequest
 }
 

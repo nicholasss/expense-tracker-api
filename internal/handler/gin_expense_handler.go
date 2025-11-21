@@ -90,12 +90,6 @@ func (h *GinHandler) GetExpenseByID(c *gin.Context) {
 }
 
 func (h *GinHandler) CreateExpense(c *gin.Context) {
-	contentType := c.GetHeader("Content-Type")
-	if contentType != "application/json" {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Bad Request: " + ErrMissingHeader.Error()})
-		return
-	}
-
 	// request body bind
 	var reqBody CreateExpenseRequest
 	err := c.ShouldBindJSON(&reqBody)
@@ -118,4 +112,36 @@ func (h *GinHandler) CreateExpense(c *gin.Context) {
 
 	// return record
 	c.JSON(http.StatusCreated, expenseToResponse(newRecord))
+}
+
+func (h *GinHandler) UpdateExpense(c *gin.Context) {
+	// bind and validation
+	var reqBody UpdateExpenseRequest
+	err := c.ShouldBindJSON(&reqBody)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Bad Request: " + err.Error()})
+		return
+	}
+
+	// send to service layer
+	err = h.Service.UpdateExpense(c.Request.Context(), reqBody.ID, reqBody.OccuredAt.Time, reqBody.Description, reqBody.Amount)
+	if err != nil {
+		log.Printf("error of: %v", err)
+		// service errors
+		if errors.Is(err, expenses.ErrInvalidAmount) || errors.Is(err, expenses.ErrInvalidOccuredAtTime) {
+			// service validation errors
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Bad Request: " + err.Error()})
+			return
+		}
+		if errors.Is(err, expenses.ErrUnusedID) {
+			// repository no record errors
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Not Found: " + err.Error()})
+			return
+		}
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+		return
+	}
+
+	// all went well
+	c.Status(http.StatusNoContent)
 }
