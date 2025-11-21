@@ -127,21 +127,49 @@ func (h *GinHandler) UpdateExpense(c *gin.Context) {
 	err = h.Service.UpdateExpense(c.Request.Context(), reqBody.ID, reqBody.OccuredAt.Time, reqBody.Description, reqBody.Amount)
 	if err != nil {
 		log.Printf("error of: %v", err)
-		// service errors
 		if errors.Is(err, expenses.ErrInvalidAmount) || errors.Is(err, expenses.ErrInvalidOccuredAtTime) {
-			// service validation errors
+			// service error
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Bad Request: " + err.Error()})
 			return
-		}
-		if errors.Is(err, expenses.ErrUnusedID) {
-			// repository no record errors
-			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Not Found: " + err.Error()})
+		} else if errors.Is(err, expenses.ErrUnusedID) {
+			// repository error
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Not Found"})
 			return
 		}
+
+		// generic error
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
 		return
 	}
 
 	// all went well
+	c.Status(http.StatusNoContent)
+}
+
+func (h *GinHandler) DeleteExpense(c *gin.Context) {
+	// check the ID for validity
+	idInt, err := ginValidateID(c.Param("id"))
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Bad Request: " + err.Error()})
+		return
+	}
+
+	// delete the record
+	err = h.Service.DeleteExpense(c.Request.Context(), idInt)
+	if err != nil {
+		// repository errors
+		if errors.Is(err, expenses.ErrInvalidID) {
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Bad Request: " + err.Error()})
+			return
+		} else if errors.Is(err, expenses.ErrUnusedID) {
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Not Found"})
+			return
+		}
+
+		// generic server error
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+		return
+	}
+
 	c.Status(http.StatusNoContent)
 }

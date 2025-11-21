@@ -333,7 +333,7 @@ func TestCreate(t *testing.T) {
 			name:        "invalid-nil-record",
 			inputRecord: nil,
 			expectError: true,
-			wantError:   sqlite.ErrNilPointer,
+			wantError:   expenses.ErrNilPointer,
 			wantRecord:  nil,
 		},
 	}
@@ -423,13 +423,13 @@ func TestUpdate(t *testing.T) {
 				Description:      "oat breakfast",
 			},
 			expectError: true,
-			wantError:   sqlite.ErrNoRowsUpdated,
+			wantError:   expenses.ErrNoRowsUpdated,
 		},
 		{
 			name:        "invalid-nil-record",
 			inputRecord: nil,
 			expectError: true,
-			wantError:   sqlite.ErrNilPointer,
+			wantError:   expenses.ErrNilPointer,
 		},
 	}
 
@@ -487,7 +487,7 @@ func TestDelete(t *testing.T) {
 			name:        "invalid-delete-nonexistent-record",
 			inputID:     10,
 			expectError: true,
-			wantError:   sqlite.ErrNoRowsDeleted,
+			wantError:   expenses.ErrNoRowsDeleted,
 		},
 	}
 
