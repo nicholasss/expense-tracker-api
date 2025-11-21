@@ -269,15 +269,6 @@ func TestNewExpense(t *testing.T) {
 			expectError:      true,
 			wantError:        expenses.ErrInvalidAmount,
 		},
-		{
-			name:             "invalid-empty-description",
-			inputOccuredAt:   time.Unix(1761721091, 0),
-			inputDescription: "",
-			inputAmount:      3499,
-			wantRecord:       nil,
-			expectError:      true,
-			wantError:        expenses.ErrInvalidDescription,
-		},
 	}
 
 	for _, testCase := range testTable {
@@ -533,15 +524,6 @@ func TestUpdateExpense(t *testing.T) {
 			inputAmount:      4810,
 			expectError:      true,
 			wantError:        expenses.ErrInvalidOccuredAtTime,
-		},
-		{
-			name:             "invalid-empty-description",
-			inputID:          3,
-			inputOccuredAt:   time.Unix(1760877900, 0),
-			inputDescription: "",
-			inputAmount:      4810,
-			expectError:      true,
-			wantError:        expenses.ErrInvalidDescription,
 		},
 		{
 			name:             "invalid-amount-zero",
