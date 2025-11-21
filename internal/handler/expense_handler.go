@@ -298,10 +298,6 @@ func (h *ExpenseHandler) CreateExpense(w http.ResponseWriter, r *http.Request) {
 			h.sendErrors(w, http.StatusBadRequest, []string{err.Error()})
 			return
 		}
-		if errors.Is(err, expenses.ErrInvalidDescription) {
-			h.sendErrors(w, http.StatusBadRequest, []string{err.Error()})
-			return
-		}
 		if errors.Is(err, expenses.ErrInvalidAmount) {
 			h.sendErrors(w, http.StatusBadRequest, []string{err.Error()})
 			return
@@ -380,10 +376,6 @@ func (h *ExpenseHandler) UpdateExpense(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		// check for custom errors
 		if errors.Is(err, expenses.ErrInvalidOccuredAtTime) {
-			h.sendErrors(w, http.StatusBadRequest, []string{err.Error()})
-			return
-		}
-		if errors.Is(err, expenses.ErrInvalidDescription) {
 			h.sendErrors(w, http.StatusBadRequest, []string{err.Error()})
 			return
 		}
