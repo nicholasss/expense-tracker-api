@@ -25,7 +25,6 @@ const (
 
 // These errors are used in the validation step of NewExpense()
 var (
-	ErrInvalidDescription   = fmt.Errorf("expense description cannot be empty")
 	ErrInvalidAmount        = fmt.Errorf("expense amount needs to be greater than 0")
 	ErrInvalidOccuredAtTime = fmt.Errorf("expense date needs to be after 1970")
 )
