@@ -2,37 +2,12 @@ package handler
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/nicholasss/expense-tracker-api/internal/expenses"
 )
-
-// === Package Variables
-
-var (
-	ErrMissingHeader = fmt.Errorf("one or more header(s) are missing")
-	ErrInvalidID     = fmt.Errorf("provided id is invalid")
-)
-
-// === Helper Functions
-
-// ginValidateID will take an id of string type and return the int type or an error.
-// It will also validate that it can be used with the service layer to get a record.
-func ginValidateID(idStr string) (int, error) {
-	idInt, err := strconv.Atoi(idStr)
-	if err != nil {
-		return 0, err
-	}
-
-	if idInt <= 0 {
-		return 0, ErrInvalidID
-	}
-
-	return idInt, nil
-}
 
 // === Handler
 
@@ -63,7 +38,7 @@ func (h *GinHandler) GetAllExpenses(c *gin.Context) {
 
 func (h *GinHandler) GetExpenseByID(c *gin.Context) {
 	// check the ID for validity
-	idInt, err := ginValidateID(c.Param("id"))
+	idInt, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Bad Request: " + err.Error()})
 		return
@@ -145,7 +120,7 @@ func (h *GinHandler) UpdateExpense(c *gin.Context) {
 
 func (h *GinHandler) DeleteExpense(c *gin.Context) {
 	// check the ID for validity
-	idInt, err := ginValidateID(c.Param("id"))
+	idInt, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Bad Request: " + err.Error()})
 		return
