@@ -68,7 +68,7 @@ func (r *mockRepository) GetAll(ctx context.Context) ([]*expenses.Expense, error
 func (r *mockRepository) Create(ctx context.Context, exp *expenses.Expense) (*expenses.Expense, error) {
 	// check for nil exp pointer
 	if exp == nil {
-		return nil, sqlite.ErrNilPointer
+		return nil, expenses.ErrNilPointer
 	}
 
 	r.mux.Lock()
@@ -92,7 +92,7 @@ func (r *mockRepository) Create(ctx context.Context, exp *expenses.Expense) (*ex
 func (r *mockRepository) Update(ctx context.Context, exp *expenses.Expense) error {
 	// check for nil exp pointer
 	if exp == nil {
-		return sqlite.ErrNilPointer
+		return expenses.ErrNilPointer
 	}
 
 	r.mux.Lock()
@@ -101,7 +101,7 @@ func (r *mockRepository) Update(ctx context.Context, exp *expenses.Expense) erro
 	// make sure id exists
 	_, exists := r.db[exp.ID]
 	if !exists {
-		return sqlite.ErrNoRowsUpdated
+		return expenses.ErrNoRowsUpdated
 	}
 
 	// perform update
@@ -119,7 +119,7 @@ func (r *mockRepository) Delete(ctx context.Context, id int) error {
 	// test if empty, and return ErrNoRowsDeleted
 	_, exists := r.db[id]
 	if r.lastID == 0 || !exists {
-		return sqlite.ErrNoRowsDeleted
+		return expenses.ErrNoRowsDeleted
 	}
 
 	// remove record because it exists
