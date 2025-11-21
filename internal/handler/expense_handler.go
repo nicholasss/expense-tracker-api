@@ -32,8 +32,9 @@ func NewExpanseHandler(service expenses.Service) *ExpenseHandler {
 // == Helper Types ==
 
 // RFC3339Time is a type that wraps and implements time.Time as a un/marshal-able type
+// NOTE: because this is a struct itself, `validator` expects the field here, not on the request struct.
 type RFC3339Time struct {
-	time.Time
+	time.Time `binding:"required"`
 }
 
 func (t *RFC3339Time) UnmarshalJSON(b []byte) error {
@@ -58,10 +59,11 @@ func (t *RFC3339Time) MarshalJSON() ([]byte, error) {
 // == Endpoint Types ==
 
 // CreateExpenseRequest is utilized specifically for the CreateExpense endpoint: POST /expense
+// NOTE: While `validator` can perfrom recursive checking of binding:"", it seems to only do that for struct types.
 type CreateExpenseRequest struct {
 	OccuredAt   RFC3339Time `json:"occured_at"`
-	Description string      `json:"description"`
-	Amount      int64       `json:"amount"`
+	Description string      `json:"description" binding:"required"`
+	Amount      int64       `json:"amount" binding:"required"`
 }
 
 // validate performs structural/syntactic validation
