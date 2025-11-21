@@ -13,15 +13,6 @@ import (
 // TODO:
 // - How should this package handle teardown of the database?
 
-// ErrNilPointer is returned when a nil pointer dereference is avoided
-var ErrNilPointer = fmt.Errorf("input pointer cannot be nil")
-
-// ErrNoRowsDeleted is returned when a delete query does not affect any rows
-var ErrNoRowsDeleted = fmt.Errorf("no rows were deleted")
-
-// ErrNoRowsUpdated is returned when an update query does not affect any rows
-var ErrNoRowsUpdated = fmt.Errorf("no rows were updated")
-
 // QueryError for wrapping sql query errors
 type QueryError struct {
 	Query string
@@ -155,7 +146,7 @@ func (r *SqliteRepository) GetAll(ctx context.Context) ([]*expenses.Expense, err
 // Create creates a new expense and returns it with id and createdAt
 func (r *SqliteRepository) Create(ctx context.Context, exp *expenses.Expense) (*expenses.Expense, error) {
 	if exp == nil {
-		return nil, ErrNilPointer
+		return nil, expenses.ErrNilPointer
 	}
 
 	insertDBE := toDBExpense(exp)
@@ -199,7 +190,7 @@ func (r *SqliteRepository) Create(ctx context.Context, exp *expenses.Expense) (*
 // It does not return the updated expense struct since id and createdAt do not change
 func (r *SqliteRepository) Update(ctx context.Context, exp *expenses.Expense) error {
 	if exp == nil {
-		return ErrNilPointer
+		return expenses.ErrNilPointer
 	}
 
 	insertDBE := toDBExpense(exp)
@@ -227,7 +218,7 @@ func (r *SqliteRepository) Update(ctx context.Context, exp *expenses.Expense) er
 	}
 
 	if rowsUpdated == 0 {
-		return ErrNoRowsUpdated
+		return expenses.ErrNoRowsUpdated
 	}
 	return nil
 }
@@ -250,7 +241,7 @@ func (r *SqliteRepository) Delete(ctx context.Context, id int) error {
 	}
 
 	if rowsAffected == 0 {
-		return ErrNoRowsDeleted
+		return expenses.ErrNoRowsDeleted
 	}
 
 	return nil

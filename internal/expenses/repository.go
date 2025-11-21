@@ -1,7 +1,19 @@
 // Package expenses implements the "business logic" for handling expenses and the repository interface for interacting with databases
 package expenses
 
-import "context"
+import (
+	"context"
+	"errors"
+)
+
+// ErrNilPointer is returned when a nil pointer dereference is avoided
+var ErrNilPointer = errors.New("input pointer cannot be nil")
+
+// ErrNoRowsDeleted is returned when a delete query does not affect any rows
+var ErrNoRowsDeleted = errors.New("no rows were deleted")
+
+// ErrNoRowsUpdated is returned when an update query does not affect any rows
+var ErrNoRowsUpdated = errors.New("no rows were updated")
 
 type Repository interface {
 	// get one expense record by ID
