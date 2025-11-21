@@ -50,15 +50,7 @@ func (e *ErrInvalidTime) Error() string {
 	return fmt.Sprintf("invalid time range of '%s'", e.ProvidedTime)
 }
 
-// checkDescription is to validate an expenses description
-func checkDescription(description string) error {
-	if description == "" {
-		return ErrInvalidDescription
-	}
-	return nil
-}
-
-// checkAmount is to validate an expenses amount
+// checkAmount is ensure that amount is not zero or negative.
 func checkAmount(amount int64) error {
 	if amount <= 0 {
 		return ErrInvalidAmount
@@ -66,7 +58,7 @@ func checkAmount(amount int64) error {
 	return nil
 }
 
-// checkOccuredAt is to validate an expenses occuredAt time
+// checkOccuredAt is to ensure that the time is able to be stored as a valid unix time
 func checkOccuredAt(occ time.Time) error {
 	unixEpoch := time.Unix(0, 0)
 	if !occ.After(unixEpoch) {
@@ -88,11 +80,6 @@ func NewService(repo Repository) *ExpenseService {
 }
 
 func (s *ExpenseService) NewExpense(ctx context.Context, occuredAt time.Time, description string, amount int64) (*Expense, error) {
-	// check description
-	if err := checkDescription(description); err != nil {
-		return nil, err
-	}
-
 	// check amount
 	if err := checkAmount(amount); err != nil {
 		return nil, err
@@ -147,17 +134,12 @@ func (s *ExpenseService) UpdateExpense(ctx context.Context, id int, occuredAt ti
 		return ErrInvalidID
 	}
 
-	// check description
-	if err := checkDescription(description); err != nil {
-		return err
-	}
-
-	// check amount
+	// validate for above 0
 	if err := checkAmount(amount); err != nil {
 		return err
 	}
 
-	// able to be unix time
+	// validate for unix time
 	if err := checkOccuredAt(occuredAt); err != nil {
 		return err
 	}
