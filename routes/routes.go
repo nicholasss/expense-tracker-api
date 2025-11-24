@@ -6,7 +6,7 @@ import (
 	"github.com/nicholasss/expense-tracker-api/internal/handler"
 )
 
-func SetupGinRoutes(service expenses.Service) *gin.Engine {
+func SetupRoutes(service expenses.Service) *gin.Engine {
 	h := handler.NewGinHandler(service)
 
 	r := gin.Default()

@@ -17,7 +17,6 @@ const ConfigPath = ".env"
 func main() {
 	cfg, err := config.LoadConfig(ConfigPath)
 	if err != nil {
-		// check for missing errors first
 		if errors.Is(err, &config.MissingVariableError{}) {
 			log.Fatal("missing variable in .env")
 		}
@@ -32,10 +31,10 @@ func main() {
 
 	service := expenses.NewService(repository)
 
-	router := routes.SetupGinRoutes(service)
+	ginEngine := routes.SetupRoutes(service)
 	log.Printf("Starting server at %s...\n", cfg.Address)
 
-	err = router.Run(cfg.Address)
+	err = ginEngine.Run(cfg.Address)
 	if err != nil {
 		log.Fatal(err)
 	}
