@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"log"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -16,6 +17,11 @@ const ConfigPath = ".env"
 func main() {
 	cfg, err := config.LoadConfig(ConfigPath)
 	if err != nil {
+		// check for missing errors first
+		if errors.Is(err, &config.MissingVariableError{}) {
+			log.Fatal("missing variable in .env")
+		}
+
 		log.Fatalf("Failed to load config: %v", err)
 	}
 
