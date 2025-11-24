@@ -12,6 +12,11 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+const (
+	database = "sqlite3"
+	dbString = ":memory:"
+)
+
 func checkExpenseEquality(t *testing.T, got, want *expenses.Expense) {
 	t.Helper()
 
@@ -31,14 +36,14 @@ func checkExpenseEquality(t *testing.T, got, want *expenses.Expense) {
 	// not checking created at for now...
 }
 
-func setupTestDB(t *testing.T) *sql.DB {
+func setupTestDB(t *testing.T, db *sql.DB) {
 	t.Helper()
 
 	// create the in memory
-	db, err := sql.Open("sqlite3", ":memory:")
-	if err != nil {
-		t.Fatalf("failed to setup in-memory sqlite database: %v", err)
-	}
+	// db, err := sql.Open(database, dbString)
+	// if err != nil {
+	// 	t.Fatalf("failed to setup in-memory sqlite database: %v", err)
+	// }
 
 	// create the table
 	createQuery := `
@@ -50,7 +55,7 @@ func setupTestDB(t *testing.T) *sql.DB {
       description TEXT,
       amount INTEGER
     );`
-	_, err = db.Exec(createQuery)
+	_, err := db.Exec(createQuery)
 	if err != nil {
 		t.Fatalf("unable to create table: %v", err)
 	}
@@ -108,7 +113,7 @@ func setupTestDB(t *testing.T) *sql.DB {
 		t.Fatalf("unable to insert test data: %v", err)
 	}
 
-	return db
+	// return
 }
 
 func TestGetByID(t *testing.T) {
@@ -161,12 +166,16 @@ func TestGetByID(t *testing.T) {
 
 	for _, testCase := range testTable {
 		t.Run(testCase.name, func(t *testing.T) {
-			db := setupTestDB(t)
-			repo := sqlite.NewSqliteRepository(db)
+			repo, err := sqlite.NewSqliteRepository(database, dbString)
+			if err != nil {
+				t.Fatalf("failed to setup in-memory sqlite3 db due to: %v", err)
+			}
+
+			setupTestDB(t, repo.DB)
 
 			// defer teardown
 			defer func() {
-				err := db.Close()
+				err := repo.DB.Close()
 				if err != nil {
 					t.Errorf("unable to close connection to in-memory sqlite database: %v", err)
 				}
@@ -250,12 +259,16 @@ func TestGetAll(t *testing.T) {
 
 	for _, testCase := range testTable {
 		t.Run(testCase.name, func(t *testing.T) {
-			db := setupTestDB(t)
-			repo := sqlite.NewSqliteRepository(db)
+			repo, err := sqlite.NewSqliteRepository(database, dbString)
+			if err != nil {
+				t.Fatalf("failed to setup in-memory sqlite3 db due to: %v", err)
+			}
+
+			setupTestDB(t, repo.DB)
 
 			// defer teardown
 			defer func() {
-				err := db.Close()
+				err := repo.DB.Close()
 				if err != nil {
 					t.Errorf("unable to close connection to in-memory sqlite database: %v", err)
 				}
@@ -340,12 +353,16 @@ func TestCreate(t *testing.T) {
 
 	for _, testCase := range testTable {
 		t.Run(testCase.name, func(t *testing.T) {
-			db := setupTestDB(t)
-			repo := sqlite.NewSqliteRepository(db)
+			repo, err := sqlite.NewSqliteRepository(database, dbString)
+			if err != nil {
+				t.Fatalf("failed to setup in-memory sqlite3 db due to: %v", err)
+			}
+
+			setupTestDB(t, repo.DB)
 
 			// defer teardown
 			defer func() {
-				err := db.Close()
+				err := repo.DB.Close()
 				if err != nil {
 					t.Errorf("unable to close connection to in-memory sqlite database: %v", err)
 				}
@@ -435,12 +452,16 @@ func TestUpdate(t *testing.T) {
 
 	for _, testCase := range testTable {
 		t.Run(testCase.name, func(t *testing.T) {
-			db := setupTestDB(t)
-			repo := sqlite.NewSqliteRepository(db)
+			repo, err := sqlite.NewSqliteRepository(database, dbString)
+			if err != nil {
+				t.Fatalf("failed to setup in-memory sqlite3 db due to: %v", err)
+			}
+
+			setupTestDB(t, repo.DB)
 
 			// defer teardown
 			defer func() {
-				err := db.Close()
+				err := repo.DB.Close()
 				if err != nil {
 					t.Errorf("unable to close connection to in-memory sqlite database: %v", err)
 				}
@@ -493,12 +514,16 @@ func TestDelete(t *testing.T) {
 
 	for _, testCase := range testTable {
 		t.Run(testCase.name, func(t *testing.T) {
-			db := setupTestDB(t)
-			repo := sqlite.NewSqliteRepository(db)
+			repo, err := sqlite.NewSqliteRepository(database, dbString)
+			if err != nil {
+				t.Fatalf("failed to setup in-memory sqlite3 db due to: %v", err)
+			}
+
+			setupTestDB(t, repo.DB)
 
 			// defer teardown
 			defer func() {
-				err := db.Close()
+				err := repo.DB.Close()
 				if err != nil {
 					t.Errorf("unable to close connection to in-memory sqlite database: %v", err)
 				}
