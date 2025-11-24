@@ -109,10 +109,6 @@ func (s *ExpenseService) GetAllExpenses(ctx context.Context) ([]*Expense, error)
 }
 
 func (s *ExpenseService) GetExpenseByID(ctx context.Context, id int) (*Expense, error) {
-	if id <= 0 {
-		return nil, ErrInvalidID
-	}
-
 	exp, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -125,10 +121,6 @@ func (s *ExpenseService) GetExpenseByID(ctx context.Context, id int) (*Expense, 
 }
 
 func (s *ExpenseService) UpdateExpense(ctx context.Context, id int, occuredAt time.Time, description string, amount int64) error {
-	if id <= 0 {
-		return ErrInvalidID
-	}
-
 	// validate for above 0
 	if err := checkAmount(amount); err != nil {
 		return err
@@ -156,10 +148,6 @@ func (s *ExpenseService) UpdateExpense(ctx context.Context, id int, occuredAt ti
 }
 
 func (s *ExpenseService) DeleteExpense(ctx context.Context, id int) error {
-	if id <= 0 {
-		return ErrInvalidID
-	}
-
 	if err := s.repo.Delete(ctx, id); err != nil {
 		if errors.Is(err, sql.ErrNoRows) || errors.Is(err, ErrNoRowsDeleted) {
 			return ErrUnusedID
