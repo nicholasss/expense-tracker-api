@@ -32,8 +32,8 @@ func NewQueryError(query string, err error) *QueryError {
 	return &QueryError{Query: query, Err: err}
 }
 
-// dbExpense has time stored as unix seconds (not milli-)
-type dbExpense struct {
+// sqliteExpense has time stored as unix seconds (not milli-)
+type sqliteExpense struct {
 	ID          int
 	CreatedAt   int64
 	OccuredAt   int64
@@ -41,9 +41,9 @@ type dbExpense struct {
 	Amount      int64
 }
 
-func toDBExpense(e *expenses.Expense) dbExpense {
+func toSqliteExpense(e *expenses.Expense) sqliteExpense {
 	// convert times to int
-	return dbExpense{
+	return sqliteExpense{
 		ID:          e.ID,
 		Description: e.Description,
 		Amount:      e.Amount,
@@ -52,7 +52,7 @@ func toDBExpense(e *expenses.Expense) dbExpense {
 	}
 }
 
-func toDomainExpense(db dbExpense) *expenses.Expense {
+func toServiceExpense(db sqliteExpense) *expenses.Expense {
 	return &expenses.Expense{
 		ID:               db.ID,
 		Description:      db.Description,
@@ -77,7 +77,7 @@ func NewSqliteRepository(driver, dbString string) (*SqliteRepository, error) {
 
 // GetByID find a particular expense with an id
 func (r *SqliteRepository) GetByID(ctx context.Context, id int) (*expenses.Expense, error) {
-	var dbE dbExpense
+	var dbE sqliteExpense
 
 	query := `
   SELECT
@@ -97,7 +97,7 @@ func (r *SqliteRepository) GetByID(ctx context.Context, id int) (*expenses.Expen
 	}
 
 	// perform conversion to domain expense as last step
-	return toDomainExpense(dbE), nil
+	return toServiceExpense(dbE), nil
 }
 
 // GetAll returns a list of all expenses in the database
@@ -122,9 +122,9 @@ func (r *SqliteRepository) GetAll(ctx context.Context) ([]*expenses.Expense, err
 	}()
 
 	// get all rows from query
-	dbExpenses := make([]dbExpense, 0)
+	dbExpenses := make([]sqliteExpense, 0)
 	for rows.Next() {
-		var dbE dbExpense
+		var dbE sqliteExpense
 		err = rows.Scan(&dbE.ID, &dbE.CreatedAt, &dbE.OccuredAt, &dbE.Description, &dbE.Amount)
 		if err != nil {
 			return nil, err
@@ -142,7 +142,7 @@ func (r *SqliteRepository) GetAll(ctx context.Context) ([]*expenses.Expense, err
 
 	expenses := make([]*expenses.Expense, 0)
 	for _, dbE := range dbExpenses {
-		expenses = append(expenses, toDomainExpense(dbE))
+		expenses = append(expenses, toServiceExpense(dbE))
 	}
 
 	return expenses, nil
@@ -154,7 +154,7 @@ func (r *SqliteRepository) Create(ctx context.Context, exp *expenses.Expense) (*
 		return nil, expenses.ErrNilPointer
 	}
 
-	insertDBE := toDBExpense(exp)
+	insertDBE := toSqliteExpense(exp)
 
 	query := `
   INSERT INTO
@@ -179,7 +179,7 @@ func (r *SqliteRepository) Create(ctx context.Context, exp *expenses.Expense) (*
 		insertDBE.OccuredAt, insertDBE.Description, insertDBE.Amount,
 	)
 
-	var returnDBE dbExpense
+	var returnDBE sqliteExpense
 	err := row.Scan(
 		&returnDBE.ID, &returnDBE.CreatedAt, &returnDBE.OccuredAt,
 		&returnDBE.Description, &returnDBE.Amount,
@@ -188,7 +188,7 @@ func (r *SqliteRepository) Create(ctx context.Context, exp *expenses.Expense) (*
 		return nil, err
 	}
 
-	return toDomainExpense(returnDBE), nil
+	return toServiceExpense(returnDBE), nil
 }
 
 // Update performs a full update for occuredAt, description, and amount
@@ -198,7 +198,7 @@ func (r *SqliteRepository) Update(ctx context.Context, exp *expenses.Expense) er
 		return expenses.ErrNilPointer
 	}
 
-	insertDBE := toDBExpense(exp)
+	insertDBE := toSqliteExpense(exp)
 
 	query := `
   UPDATE
