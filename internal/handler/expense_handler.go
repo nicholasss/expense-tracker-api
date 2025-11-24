@@ -58,57 +58,10 @@ type CreateExpenseRequest struct {
 	Amount      int64       `json:"amount" binding:"required,gt=0"`
 }
 
-// validate performs structural/syntactic validation
-//
-// Method validate will respond with a slice of string, and a bool.
-// If it is valid then it will be `[]string{}, true`,
-// otherwise it will list reasons and be false `[]string{...}, false`.
-// You could utilize the 'comma ok' idiom or not, as shown below.
-//
-// reasons, isValid := c.validate()
-func (c *CreateExpenseRequest) validate() ([]string, bool) {
-	issues := make([]string, 0)
-	isValid := true
-
-	if c.Amount <= 0 {
-		issues = append(issues, "field 'amount' is negative, missing, or zero")
-		isValid = false
-	}
-	if c.OccuredAt.IsZero() {
-		issues = append(issues, "field 'occured_at' is missing or empty")
-		isValid = false
-	}
-	if c.Description == "" {
-		issues = append(issues, "field 'description' is missing or empty")
-		isValid = false
-	}
-	return issues, isValid
-}
-
 // UpdateExpenseRequest is utilized specifically for the UpdateExpense endpoint: PUT /expense
 type UpdateExpenseRequest struct {
 	ID int `json:"id" binding:"required"`
 	CreateExpenseRequest
-}
-
-func (u *UpdateExpenseRequest) validate() ([]string, bool) {
-	issues := make([]string, 0)
-	isValid := true
-
-	if u.ID <= 0 {
-		issues = append(issues, "id is not valid")
-		isValid = false
-	}
-
-	// just utilize the prexisting validation method
-	c := CreateExpenseRequest{Amount: u.Amount, Description: u.Description, OccuredAt: u.OccuredAt}
-	cIssues, cIsValid := c.validate()
-	if !cIsValid {
-		issues = append(issues, cIssues...)
-		isValid = false
-	}
-
-	return issues, isValid
 }
 
 // ExpenseResponse is hopefully a general response that can be used across several endpoints
