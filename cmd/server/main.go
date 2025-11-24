@@ -20,7 +20,11 @@ func main() {
 		log.Fatalf("Failed to load config: %v", err)
 	}
 
-	repository := sqlite.NewSqliteRepository(cfg.DB)
+	repository, err := sqlite.NewSqliteRepository(cfg.DBDriver, cfg.DBPath)
+	if err != nil {
+		log.Fatalf("Failed to load SQLite3 database: %v", err)
+	}
+
 	service := expenses.NewService(repository)
 
 	mux, err := routes.SetupRoutes(service)

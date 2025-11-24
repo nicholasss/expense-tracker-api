@@ -2,13 +2,10 @@
 package config
 
 import (
-	"database/sql"
 	"os"
 
 	"github.com/joho/godotenv"
 )
-
-const database string = "expense-tracker.db"
 
 type MissingVariableError struct{}
 
@@ -24,9 +21,9 @@ type Config struct {
 	Address string
 
 	// Database config
-	DBPath   string
-	DBDriver string
-	DB       *sql.DB
+	DBPath     string
+	DBDriver   string
+	MongoDBURI string
 }
 
 // LoadConfig will load given file path and setup the config
@@ -40,14 +37,10 @@ func LoadConfig(filePath string) (*Config, error) {
 	localPort := os.Getenv("LOCAL_PORT")
 	dbPath := os.Getenv("DB_PATH")
 	dbDriver := os.Getenv("GOOSE_DRIVER")
+	mongoDBURI := os.Getenv("MONGODB_URI")
 
-	if localAddress == "" || localPort == "" || dbPath == "" || dbDriver == "" {
+	if localAddress == "" || localPort == "" || dbPath == "" || dbDriver == "" || mongoDBURI == "" {
 		return nil, &MissingVariableError{}
-	}
-
-	db, err := sql.Open(dbDriver, database)
-	if err != nil {
-		return nil, err
 	}
 
 	conf := Config{
@@ -57,9 +50,9 @@ func LoadConfig(filePath string) (*Config, error) {
 		Address:      localAddress + ":" + localPort,
 
 		// database
-		DBPath:   dbPath,
-		DBDriver: dbDriver,
-		DB:       db,
+		DBPath:     dbPath,
+		DBDriver:   dbDriver,
+		MongoDBURI: mongoDBURI,
 	}
 
 	return &conf, nil
