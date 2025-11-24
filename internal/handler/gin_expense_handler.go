@@ -1,15 +1,17 @@
 package handler
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/nicholasss/expense-tracker-api/internal/expenses"
 )
 
-// === Handler
+// === Handler Type
 
 type GinHandler struct {
 	Service expenses.Service
@@ -18,6 +20,123 @@ type GinHandler struct {
 func NewGinHandler(service expenses.Service) *GinHandler {
 	return &GinHandler{Service: service}
 }
+
+// == Helper Types ==
+
+// RFC3339Time is a type that wraps and implements time.Time as a un/marshal-able type
+// NOTE: because this is a struct itself, `validator` expects the field here, not on the request struct.
+type RFC3339Time struct {
+	time.Time `binding:"required"`
+}
+
+func (t *RFC3339Time) UnmarshalJSON(b []byte) error {
+	var s string
+	if err := json.Unmarshal(b, &s); err != nil {
+		return err
+	}
+
+	parsed, err := time.Parse(time.RFC3339, s)
+	if err != nil {
+		return err
+	}
+
+	t.Time = parsed
+	return nil
+}
+
+func (t *RFC3339Time) MarshalJSON() ([]byte, error) {
+	return json.Marshal(t.Format(time.RFC3339))
+}
+
+// == Endpoint Types ==
+
+// CreateExpenseRequest is utilized specifically for the CreateExpense endpoint: POST /expense
+// NOTE: While `validator` can perfrom recursive checking of binding:"", it seems to only do that for struct types.
+type CreateExpenseRequest struct {
+	OccuredAt   RFC3339Time `json:"occured_at"`
+	Description string      `json:"description" binding:"required"`
+	Amount      int64       `json:"amount" binding:"required,gt=0"`
+}
+
+// validate performs structural/syntactic validation
+//
+// Method validate will respond with a slice of string, and a bool.
+// If it is valid then it will be `[]string{}, true`,
+// otherwise it will list reasons and be false `[]string{...}, false`.
+// You could utilize the 'comma ok' idiom or not, as shown below.
+//
+// reasons, isValid := c.validate()
+func (c *CreateExpenseRequest) validate() ([]string, bool) {
+	issues := make([]string, 0)
+	isValid := true
+
+	if c.Amount <= 0 {
+		issues = append(issues, "field 'amount' is negative, missing, or zero")
+		isValid = false
+	}
+	if c.OccuredAt.IsZero() {
+		issues = append(issues, "field 'occured_at' is missing or empty")
+		isValid = false
+	}
+	if c.Description == "" {
+		issues = append(issues, "field 'description' is missing or empty")
+		isValid = false
+	}
+	return issues, isValid
+}
+
+// UpdateExpenseRequest is utilized specifically for the UpdateExpense endpoint: PUT /expense
+type UpdateExpenseRequest struct {
+	ID int `json:"id" binding:"required"`
+	CreateExpenseRequest
+}
+
+func (u *UpdateExpenseRequest) validate() ([]string, bool) {
+	issues := make([]string, 0)
+	isValid := true
+
+	if u.ID <= 0 {
+		issues = append(issues, "id is not valid")
+		isValid = false
+	}
+
+	// just utilize the prexisting validation method
+	c := CreateExpenseRequest{Amount: u.Amount, Description: u.Description, OccuredAt: u.OccuredAt}
+	cIssues, cIsValid := c.validate()
+	if !cIsValid {
+		issues = append(issues, cIssues...)
+		isValid = false
+	}
+
+	return issues, isValid
+}
+
+// ExpenseResponse is hopefully a general response that can be used across several endpoints
+type ExpenseResponse struct {
+	ID          int         `json:"id"`
+	CreatedAt   RFC3339Time `json:"created_at"`
+	OccuredAt   RFC3339Time `json:"occured_at"`
+	Description string      `json:"description"`
+	Amount      int64       `json:"amount"`
+}
+
+func expenseToResponse(exp *expenses.Expense) *ExpenseResponse {
+	return &ExpenseResponse{
+		ID:          exp.ID,
+		CreatedAt:   RFC3339Time{Time: exp.RecordCreatedAt},
+		OccuredAt:   RFC3339Time{Time: exp.ExpenseOccuredAt},
+		Description: exp.Description,
+		Amount:      exp.Amount,
+	}
+}
+
+// ErrorResponse is a payload type that is used for sending errors to the clients.
+type ErrorResponse struct {
+	HTTPCode int      `json:"code"`
+	Issues   []string `json:"issues"`
+}
+
+// === Endpoint Hanlders ===
 
 func (h *GinHandler) GetAllExpenses(c *gin.Context) {
 	// get data
