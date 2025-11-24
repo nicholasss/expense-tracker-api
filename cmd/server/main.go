@@ -24,7 +24,7 @@ func main() {
 
 	repository, err := mongodb.NewMongoDBRespository(cfg.MongoDBURI)
 	if err != nil {
-		log.Fatalf("Failed to load SQLite3 database: %v", err)
+		log.Fatalf("Failed to load respository: %v", err)
 	}
 
 	service := expenses.NewService(repository)
