@@ -18,6 +18,4 @@ type Service interface {
 	UpdateExpense(ctx context.Context, id int, occuredAt time.Time, description string, amount int64) error
 
 	DeleteExpense(ctx context.Context, id int) error
-
-	SummarizeExpenses(ctx context.Context, kind SummaryTimeRange, modifier string) (*ExpenseSummary, error)
 }

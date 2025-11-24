@@ -1,32 +1,24 @@
-// Package handler utilizes the controller (handler) pattern in order to handle the web request logic.
-//
-// One of its responsibilities is to validate requests and route them to the relevant services.
 package handler
 
 import (
-	"database/sql"
 	"encoding/json"
 	"errors"
-	"log"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/nicholasss/expense-tracker-api/internal/expenses"
 )
 
-// === Types ===
+// === Handler Type
 
-// == Handler Definition ==
-
-// The ExpenseHandler is imported into a /cmd package, and provides the handlers via its methods.
-type ExpenseHandler struct {
+type GinHandler struct {
 	Service expenses.Service
 }
 
-func NewExpanseHandler(service expenses.Service) *ExpenseHandler {
-	return &ExpenseHandler{Service: service}
+func NewGinHandler(service expenses.Service) *GinHandler {
+	return &GinHandler{Service: service}
 }
 
 // == Helper Types ==
@@ -66,57 +58,10 @@ type CreateExpenseRequest struct {
 	Amount      int64       `json:"amount" binding:"required,gt=0"`
 }
 
-// validate performs structural/syntactic validation
-//
-// Method validate will respond with a slice of string, and a bool.
-// If it is valid then it will be `[]string{}, true`,
-// otherwise it will list reasons and be false `[]string{...}, false`.
-// You could utilize the 'comma ok' idiom or not, as shown below.
-//
-// reasons, isValid := c.validate()
-func (c *CreateExpenseRequest) validate() ([]string, bool) {
-	issues := make([]string, 0)
-	isValid := true
-
-	if c.Amount <= 0 {
-		issues = append(issues, "field 'amount' is negative, missing, or zero")
-		isValid = false
-	}
-	if c.OccuredAt.IsZero() {
-		issues = append(issues, "field 'occured_at' is missing or empty")
-		isValid = false
-	}
-	if c.Description == "" {
-		issues = append(issues, "field 'description' is missing or empty")
-		isValid = false
-	}
-	return issues, isValid
-}
-
 // UpdateExpenseRequest is utilized specifically for the UpdateExpense endpoint: PUT /expense
 type UpdateExpenseRequest struct {
 	ID int `json:"id" binding:"required"`
 	CreateExpenseRequest
-}
-
-func (u *UpdateExpenseRequest) validate() ([]string, bool) {
-	issues := make([]string, 0)
-	isValid := true
-
-	if u.ID <= 0 {
-		issues = append(issues, "id is not valid")
-		isValid = false
-	}
-
-	// just utilize the prexisting validation method
-	c := CreateExpenseRequest{Amount: u.Amount, Description: u.Description, OccuredAt: u.OccuredAt}
-	cIssues, cIsValid := c.validate()
-	if !cIsValid {
-		issues = append(issues, cIssues...)
-		isValid = false
-	}
-
-	return issues, isValid
 }
 
 // ExpenseResponse is hopefully a general response that can be used across several endpoints
@@ -144,288 +89,131 @@ type ErrorResponse struct {
 	Issues   []string `json:"issues"`
 }
 
-// === Helper Functions ===
+// === Endpoint Hanlders ===
 
-// validateID performs structural validation of the ID
-func validateID(idStr string) (int, error) {
-	if idStr == "" {
-		return 0, errors.New("id in path is missing")
-	}
-
-	// checking structural validity
-	idInt, err := strconv.Atoi(idStr)
+func (h *GinHandler) GetAllExpenses(c *gin.Context) {
+	// get data
+	records, err := h.Service.GetAllExpenses(c.Request.Context())
 	if err != nil {
-		return 0, errors.New("id in path is not valid id")
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+		return
 	}
 
-	return idInt, nil
+	responseRecords := make([]*ExpenseResponse, 0)
+	for _, record := range records {
+		responseRecords = append(responseRecords, expenseToResponse(record))
+	}
+
+	// send data
+	c.JSON(http.StatusOK, responseRecords)
 }
 
-// headersAreValid will check for missing headers and will call sendError if needed.
-func (h *ExpenseHandler) headersAreValid(w http.ResponseWriter, r *http.Request) bool {
-	issues := make([]string, 0)
-
-	ct := r.Header.Get("Content-Type")
-	if !strings.Contains(ct, "application/json") {
-		issues = append(issues, "'Content-Type' header missing 'application/json'")
-	}
-
-	if len(issues) == 0 {
-		return true
-	}
-
-	h.sendErrors(w, http.StatusBadRequest, issues)
-	return false
-}
-
-// sendJSON handles errors internaly and will write directly to the client where able.
-func (h *ExpenseHandler) sendJSON(w http.ResponseWriter, status int, responsePayload any) {
-	// marshal response payload
-	respData, err := json.Marshal(responsePayload)
+func (h *GinHandler) GetExpenseByID(c *gin.Context) {
+	// check the ID for validity
+	idInt, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		h.sendErrors(w, http.StatusInternalServerError, []string{"database error"})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Bad Request: " + err.Error()})
 		return
 	}
 
-	// first set header and response code
-	w.Header().Add("Content-Type", "application/json")
-	w.WriteHeader(status)
-
-	bytesWritten, err := w.Write(respData)
+	// get the record
+	record, err := h.Service.GetExpenseByID(c.Request.Context(), idInt)
 	if err != nil {
-		log.Println("unable to write full response due to:", err)
-		return
-	}
-	if bytesWritten < len(respData) {
-		log.Println("unable to write full response based on bytes written")
-		return
-	}
-}
-
-// sendErrors will create and write the provided error code to the provided http.ResponseWriter.
-func (h *ExpenseHandler) sendErrors(w http.ResponseWriter, code int, issues []string) {
-	// guard against invalid status codes
-	if statusText := http.StatusText(code); statusText == "" {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	// guard against nil or empty slices
-	if issues == nil {
-		issues = make([]string, 0)
-	}
-	if len(issues) == 0 {
-		issues = append(issues, http.StatusText(code))
-	}
-
-	// marshal to bytes
-	payload := &ErrorResponse{
-		HTTPCode: code,
-		Issues:   issues,
-	}
-	issuesData, err := json.Marshal(payload)
-	if err != nil {
-		return
-	}
-
-	// send to client
-	w.WriteHeader(code)
-	bytesWritten, err := w.Write(issuesData)
-	if err != nil {
-		log.Println("unable to write full response due to:", err)
-		return
-	}
-	if bytesWritten < len(issuesData) {
-		log.Println("unable to write full response based on bytes written")
-		return
-	}
-}
-
-// === Endpoint Handlers ===
-
-// GetAllExpenses ...
-func (h *ExpenseHandler) GetAllExpenses(w http.ResponseWriter, r *http.Request) {
-	expRecords, err := h.Service.GetAllExpenses(r.Context())
-	if err != nil {
-		h.sendErrors(w, http.StatusInternalServerError, []string{"database error"})
-		return
-	}
-
-	responsePayload := make([]ExpenseResponse, 0, len(expRecords))
-	for _, exp := range expRecords {
-		responsePayload = append(responsePayload, *expenseToResponse(exp))
-	}
-
-	h.sendJSON(w, http.StatusOK, responsePayload)
-}
-
-// CreateExpense handles 'POST /expenses'
-func (h *ExpenseHandler) CreateExpense(w http.ResponseWriter, r *http.Request) {
-	if !h.headersAreValid(w, r) {
-		return
-	}
-
-	// get the json body, partially performs validation by ensuring structural validity
-	var reqBody *CreateExpenseRequest
-	err := json.NewDecoder(r.Body).Decode(&reqBody)
-	if err != nil {
-		h.sendErrors(w, http.StatusBadRequest, []string{"unable to decode body"})
-		return
-	}
-
-	// defer body closure and error check
-	defer func() {
-		err = r.Body.Close()
-		if err != nil {
-			h.sendErrors(w, http.StatusInternalServerError, []string{})
-		}
-	}()
-
-	// validation of structure
-	issues, isValid := reqBody.validate()
-	if !isValid {
-		h.sendErrors(w, http.StatusBadRequest, issues)
-		return
-	}
-
-	// send to service layer and semantic/'business' validation
-	//
-	// we will just need to send the single error back to the client, even if there are multiple issues
-	expRecord, err := h.Service.NewExpense(r.Context(), reqBody.OccuredAt.Time, reqBody.Description, reqBody.Amount)
-	if err != nil {
-		// check for custom errors
-		if errors.Is(err, expenses.ErrInvalidOccuredAtTime) {
-			h.sendErrors(w, http.StatusBadRequest, []string{err.Error()})
-			return
-		}
-		if errors.Is(err, expenses.ErrInvalidAmount) {
-			h.sendErrors(w, http.StatusBadRequest, []string{err.Error()})
+		// specifically respond 404 if id is not a record
+		if errors.Is(err, expenses.ErrUnusedID) {
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Not Found: " + err.Error()})
 			return
 		}
 
-		// otherwise errors would likely be 5XX
-		h.sendErrors(w, 500, []string{})
+		// otherwise send generic error
+		c.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
 
-	responsePayload := expenseToResponse(expRecord)
-	h.sendJSON(w, 201, responsePayload)
+	// send reccord
+	c.JSON(http.StatusOK, expenseToResponse(record))
 }
 
-// GetExpenseByID ...
-func (h *ExpenseHandler) GetExpenseByID(w http.ResponseWriter, r *http.Request) {
-	// structural validation of id
-	idInt, err := validateID(r.PathValue("id"))
+func (h *GinHandler) CreateExpense(c *gin.Context) {
+	// request body bind
+	var reqBody CreateExpenseRequest
+	err := c.ShouldBindJSON(&reqBody)
 	if err != nil {
-		h.sendErrors(w, http.StatusBadRequest, []string{err.Error()})
-		return
-	}
-
-	// calling service and letting it perform semantic/'business' validation
-	exp, err := h.Service.GetExpenseByID(r.Context(), idInt)
-	if err != nil {
-		// checking for invalid ID or an ID that does not exist
-		if errors.Is(err, expenses.ErrInvalidID) {
-			h.sendErrors(w, http.StatusBadRequest, []string{err.Error()})
-			return
-		}
-		if errors.Is(err, expenses.ErrUnusedID) || errors.Is(err, sql.ErrNoRows) {
-			h.sendErrors(w, http.StatusNotFound, []string{err.Error()})
-			return
-		}
-		// any other errors
-		h.sendErrors(w, http.StatusInternalServerError, []string{})
-		return
-	}
-
-	responsePayload := expenseToResponse(exp)
-	h.sendJSON(w, http.StatusOK, responsePayload)
-}
-
-// UpdateExpense ...
-func (h *ExpenseHandler) UpdateExpense(w http.ResponseWriter, r *http.Request) {
-	if !h.headersAreValid(w, r) {
-		return
-	}
-
-	// recieve json body
-	var reqBody UpdateExpenseRequest
-	err := json.NewDecoder(r.Body).Decode(&reqBody)
-	if err != nil {
-		h.sendErrors(w, http.StatusBadRequest, []string{"unable to decode body"})
-		return
-	}
-
-	// defer closing body
-	defer func() {
-		err = r.Body.Close()
-		if err != nil {
-			h.sendErrors(w, http.StatusInternalServerError, []string{})
-		}
-	}()
-
-	// validatin of request body
-	issues, isValid := reqBody.validate()
-	if !isValid {
-		h.sendErrors(w, http.StatusBadRequest, issues)
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Bad Request: " + err.Error()})
 		return
 	}
 
 	// send to service layer
-	err = h.Service.UpdateExpense(r.Context(), reqBody.ID, reqBody.OccuredAt.Time, reqBody.Description, reqBody.Amount)
+	newRecord, err := h.Service.NewExpense(c.Request.Context(), reqBody.OccuredAt.Time, reqBody.Description, reqBody.Amount)
 	if err != nil {
-		// check for custom errors
-		if errors.Is(err, expenses.ErrInvalidOccuredAtTime) {
-			h.sendErrors(w, http.StatusBadRequest, []string{err.Error()})
+		// checking for service errors
+		if errors.Is(err, expenses.ErrInvalidAmount) || errors.Is(err, expenses.ErrInvalidOccuredAtTime) {
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Bad Request: " + err.Error()})
 			return
 		}
-		if errors.Is(err, expenses.ErrInvalidAmount) {
-			h.sendErrors(w, http.StatusBadRequest, []string{err.Error()})
-			return
-		}
-		if errors.Is(err, expenses.ErrUnusedID) {
-			h.sendErrors(w, http.StatusNotFound, []string{err.Error()})
-		}
-
-		// generic errors
-		h.sendErrors(w, http.StatusInternalServerError, []string{err.Error()})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
 		return
 	}
 
-	// otherwise everything went perfect
-	w.WriteHeader(http.StatusNoContent)
+	// return record
+	c.JSON(http.StatusCreated, expenseToResponse(newRecord))
 }
 
-// DeleteExpense ...
-func (h *ExpenseHandler) DeleteExpense(w http.ResponseWriter, r *http.Request) {
-	idStr := r.PathValue("id")
-	idInt, err := validateID(idStr)
+func (h *GinHandler) UpdateExpense(c *gin.Context) {
+	// bind and validation
+	var reqBody UpdateExpenseRequest
+	err := c.ShouldBindJSON(&reqBody)
 	if err != nil {
-		h.sendErrors(w, http.StatusBadRequest, []string{err.Error()})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Bad Request: " + err.Error()})
 		return
 	}
 
-	// send to service
-	err = h.Service.DeleteExpense(r.Context(), idInt)
+	// send to service layer
+	err = h.Service.UpdateExpense(c.Request.Context(), reqBody.ID, reqBody.OccuredAt.Time, reqBody.Description, reqBody.Amount)
 	if err != nil {
-		if errors.Is(err, expenses.ErrInvalidID) {
-			h.sendErrors(w, http.StatusBadRequest, []string{err.Error()})
+		if errors.Is(err, expenses.ErrInvalidAmount) || errors.Is(err, expenses.ErrInvalidOccuredAtTime) {
+			// service error
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Bad Request: " + err.Error()})
+			return
+		} else if errors.Is(err, expenses.ErrUnusedID) {
+			// repository error
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Not Found"})
 			return
 		}
-		if errors.Is(err, expenses.ErrUnusedID) {
-			h.sendErrors(w, http.StatusNotFound, []string{err.Error()})
+
+		// generic error
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+		return
+	}
+
+	// all went well
+	c.Status(http.StatusNoContent)
+}
+
+func (h *GinHandler) DeleteExpense(c *gin.Context) {
+	// check the ID for validity
+	idInt, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Bad Request: " + err.Error()})
+		return
+	}
+
+	// delete the record
+	err = h.Service.DeleteExpense(c.Request.Context(), idInt)
+	if err != nil {
+		// repository errors
+		if errors.Is(err, expenses.ErrInvalidID) {
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Bad Request: " + err.Error()})
+			return
+		} else if errors.Is(err, expenses.ErrUnusedID) {
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Not Found"})
 			return
 		}
 
 		// generic server error
-		h.sendErrors(w, http.StatusInternalServerError, []string{})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
-}
-
-// SummarizeExpenses ...
-func (h *ExpenseHandler) SummarizeExpenses(w http.ResponseWriter, r *http.Request) {
-	log.Println("summarize expenses is not implmeneted yet")
+	c.Status(http.StatusNoContent)
 }

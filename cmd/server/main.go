@@ -1,8 +1,8 @@
 package main
 
 import (
+	"errors"
 	"log"
-	"net/http"
 
 	_ "github.com/mattn/go-sqlite3"
 
@@ -17,6 +17,10 @@ const ConfigPath = ".env"
 func main() {
 	cfg, err := config.LoadConfig(ConfigPath)
 	if err != nil {
+		if errors.Is(err, &config.MissingVariableError{}) {
+			log.Fatal("missing variable in .env")
+		}
+
 		log.Fatalf("Failed to load config: %v", err)
 	}
 
@@ -27,13 +31,10 @@ func main() {
 
 	service := expenses.NewService(repository)
 
-	mux, err := routes.SetupRoutes(service)
-	if err != nil {
-		log.Fatalf("Failed to setup routes: %v", err)
-	}
-
+	ginEngine := routes.SetupRoutes(service)
 	log.Printf("Starting server at %s...\n", cfg.Address)
-	err = http.ListenAndServe(cfg.Address, mux)
+
+	err = ginEngine.Run(cfg.Address)
 	if err != nil {
 		log.Fatal(err)
 	}

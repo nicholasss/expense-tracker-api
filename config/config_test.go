@@ -52,6 +52,7 @@ func TestLoadConfig(t *testing.T) {
 		"DB_PATH",
 		"GOOSE_DRIVER",
 		"GOOSE_DBSTRING",
+		"MONGODB_URI",
 	}
 
 	testTable := []struct {
@@ -62,7 +63,7 @@ func TestLoadConfig(t *testing.T) {
 		wantConfig  *config.Config
 	}{
 		{
-			name: "valid-config-load",
+			name: "valid-config-load-a",
 			inputConfig: `# server vars
       export LOCAL_ADDRESS="localhost"
       export LOCAL_PORT="8080"
@@ -70,7 +71,10 @@ func TestLoadConfig(t *testing.T) {
 
       # Goose vars
       export GOOSE_DRIVER="sqlite3"
-      export GOOSE_DBSTRING="./../../expense-tracker.db"`,
+      export GOOSE_DBSTRING="./../../expense-tracker.db"
+
+      # MongoDB Vars
+      export MONGODB_URI="mongodb://localhost:27017"`,
 			expectError: false,
 			wantError:   nil,
 			wantConfig: &config.Config{
@@ -82,14 +86,17 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			name: "valid-config-load",
+			name: "valid-config-load-b",
 			inputConfig: `# server vars
       export LOCAL_ADDRESS="localhost"
       export LOCAL_PORT="8080"
       export DB_PATH="./expense-tracker.db"
 
       # Goose vars
-      export GOOSE_DRIVER="sqlite3"`,
+      export GOOSE_DRIVER="sqlite3"
+
+      # MongoDB Vars
+      export MONGODB_URI="mongodb://localhost:27017"`,
 			expectError: false,
 			wantError:   nil,
 			wantConfig: &config.Config{

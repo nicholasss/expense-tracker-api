@@ -418,17 +418,17 @@ func TestGetExpenseByID(t *testing.T) {
 			},
 		},
 		{
-			name:        "invalid-zero-id",
-			inputID:     0,
+			name:        "invalid-id-too-large-a",
+			inputID:     1236,
 			expectError: true,
-			wantError:   expenses.ErrInvalidID,
+			wantError:   expenses.ErrUnusedID,
 			wantRecord:  nil,
 		},
 		{
-			name:        "invalid-negative-id",
-			inputID:     -2,
+			name:        "invalid-id-too-large-b",
+			inputID:     49,
 			expectError: true,
-			wantError:   expenses.ErrInvalidID,
+			wantError:   expenses.ErrUnusedID,
 			wantRecord:  nil,
 		},
 	}
@@ -499,24 +499,6 @@ func TestUpdateExpense(t *testing.T) {
 			wantError:        nil,
 		},
 		{
-			name:             "invalid-zero-id",
-			inputID:          0,
-			inputOccuredAt:   time.Unix(1760574600, 0),
-			inputDescription: "dinner out with friends, not family",
-			inputAmount:      8929,
-			expectError:      true,
-			wantError:        expenses.ErrInvalidID,
-		},
-		{
-			name:             "invalid-negative-id",
-			inputID:          -2,
-			inputOccuredAt:   time.Unix(1760574600, 0),
-			inputDescription: "dinner out with friends, not family",
-			inputAmount:      8929,
-			expectError:      true,
-			wantError:        expenses.ErrInvalidID,
-		},
-		{
 			name:             "invalid-occured-at-time",
 			inputID:          3,
 			inputOccuredAt:   time.Unix(0, 0),
@@ -542,6 +524,24 @@ func TestUpdateExpense(t *testing.T) {
 			inputAmount:      -2,
 			expectError:      true,
 			wantError:        expenses.ErrInvalidAmount,
+		},
+		{
+			name:             "invalid-id-too-large-a",
+			inputID:          1235,
+			inputOccuredAt:   time.Unix(1760574600, 0),
+			inputDescription: "dinner out with friends, not family",
+			inputAmount:      8929,
+			expectError:      true,
+			wantError:        expenses.ErrUnusedID,
+		},
+		{
+			name:             "invalid-id-too-large-b",
+			inputID:          33,
+			inputOccuredAt:   time.Unix(1760574600, 0),
+			inputDescription: "dinner out with friends, not family",
+			inputAmount:      8929,
+			expectError:      true,
+			wantError:        expenses.ErrUnusedID,
 		},
 	}
 
@@ -589,16 +589,16 @@ func TestDelete(t *testing.T) {
 			wantError:   nil,
 		},
 		{
-			name:        "invalid-zero-id",
-			inputID:     0,
+			name:        "invalid-delete-too-large-id-a",
+			inputID:     1234,
 			expectError: true,
-			wantError:   expenses.ErrInvalidID,
+			wantError:   expenses.ErrUnusedID,
 		},
 		{
-			name:        "invalid-negative-id",
-			inputID:     -2,
+			name:        "invalid-delete-too-large-id-b",
+			inputID:     37,
 			expectError: true,
-			wantError:   expenses.ErrInvalidID,
+			wantError:   expenses.ErrUnusedID,
 		},
 	}
 
@@ -619,192 +619,6 @@ func TestDelete(t *testing.T) {
 			if gotErr != nil {
 				if !errors.Is(gotErr, testCase.wantError) {
 					t.Errorf("got error: %v, want error: %v", gotErr, testCase.wantError)
-				}
-			}
-		})
-	}
-}
-
-func TestSummarizeExpenses(t *testing.T) {
-	testTable := []struct {
-		name          string
-		inputKind     expenses.SummaryTimeRange
-		inputModifier string
-		wantSummary   *expenses.ExpenseSummary
-		expectError   bool
-		wantError     error
-	}{
-		//
-		// this month
-		{
-			name:          "valid-this-month-summary",
-			inputKind:     expenses.ThisMonth,
-			inputModifier: "",
-			wantSummary: &expenses.ExpenseSummary{
-				SummaryTimeRange: "This Month",
-				Total:            127439,
-			},
-			expectError: false,
-			wantError:   nil,
-		},
-		//
-		// custom months
-		{
-			name:          "valid-october-month-summary",
-			inputKind:     expenses.CustomMonth,
-			inputModifier: "2025-10",
-			wantSummary: &expenses.ExpenseSummary{
-				SummaryTimeRange: "Custom Month: October of 2025",
-				Total:            127439,
-			},
-			expectError: false,
-			wantError:   nil,
-		},
-		{
-			name:          "valid-september-month-summary",
-			inputKind:     expenses.CustomMonth,
-			inputModifier: "2025-09",
-			wantSummary: &expenses.ExpenseSummary{
-				SummaryTimeRange: "Custom Month: September of 2025",
-				Total:            0,
-			},
-			expectError: false,
-			wantError:   nil,
-		},
-		{
-			name:          "invalid-month-has-letters-month-summary",
-			inputKind:     expenses.CustomMonth,
-			inputModifier: "2025-a9",
-			wantSummary:   nil,
-			expectError:   true,
-			wantError: &expenses.ErrInvalidTime{
-				ProvidedTime: "2025-a9",
-			},
-		},
-		{
-			name:          "invalid-year-has-letters-month-summary",
-			inputKind:     expenses.CustomMonth,
-			inputModifier: "20a5-09",
-			wantSummary:   nil,
-			expectError:   true,
-			wantError: &expenses.ErrInvalidTime{
-				ProvidedTime: "20a5-09",
-			},
-		},
-		{
-			name:          "invalid-empty-month-modifier-summary",
-			inputKind:     expenses.CustomMonth,
-			inputModifier: "",
-			wantSummary:   nil,
-			expectError:   true,
-			wantError: &expenses.ErrInvalidTime{
-				ProvidedTime: "",
-			},
-		},
-		{
-			name:          "invalid-nonexistent-month-modifier-summary",
-			inputKind:     expenses.CustomMonth,
-			inputModifier: "2025-13",
-			wantSummary:   nil,
-			expectError:   true,
-			wantError: &expenses.ErrInvalidTime{
-				ProvidedTime: "2025-13",
-			},
-		},
-		{
-			name:          "invalid-pre-unix-epoch-month-modifier-summary",
-			inputKind:     expenses.CustomMonth,
-			inputModifier: "1969-09",
-			wantSummary:   nil,
-			expectError:   true,
-			wantError: &expenses.ErrInvalidTime{
-				ProvidedTime: "1969-09",
-			},
-		},
-		//
-		// this year
-		{
-			name:          "valid-this-year-summary",
-			inputKind:     expenses.ThisYear,
-			inputModifier: "",
-			wantSummary: &expenses.ExpenseSummary{
-				SummaryTimeRange: "This Year",
-				Total:            127439,
-			},
-			expectError: false,
-			wantError:   nil,
-		},
-		//
-		// custom year
-		{
-			name:          "valid-two-years-ago-summary",
-			inputKind:     expenses.CustomYear,
-			inputModifier: "2023",
-			wantSummary: &expenses.ExpenseSummary{
-				SummaryTimeRange: "Custom Year: 2023",
-				Total:            0,
-			},
-			expectError: false,
-			wantError:   nil,
-		},
-		{
-			name:          "invalid-empty-modifier-custom-year-summary",
-			inputKind:     expenses.CustomYear,
-			inputModifier: "",
-			wantSummary:   nil,
-			expectError:   true,
-			wantError: &expenses.ErrInvalidTime{
-				ProvidedTime: "",
-			},
-		},
-		{
-			name:          "invalid-pre-unix-epoch-modifier-custom-year-summary",
-			inputKind:     expenses.CustomYear,
-			inputModifier: "1969",
-			wantSummary:   nil,
-			expectError:   true,
-			wantError: &expenses.ErrInvalidTime{
-				ProvidedTime: "1969",
-			},
-		},
-		// TODO:
-		// custom month-year range
-		// ... not implemented yet
-	}
-
-	for _, testCase := range testTable {
-		t.Run(testCase.name, func(t *testing.T) {
-			repo := setupTestRepo(t)
-			serv := expenses.NewService(repo)
-
-			// call function to test
-			gotSummary, gotErr := serv.SummarizeExpenses(t.Context(), testCase.inputKind, testCase.inputModifier)
-
-			// checking if we got an error
-			if (gotErr != nil) != testCase.expectError {
-				t.Errorf("SummarizeExpenses() got error: '%v', expected error: '%v'", gotErr, testCase.wantError)
-
-				// checking recieved error type
-			} else if gotErr != nil {
-
-				// checking for expenses.ErrInvalidTime error
-				var wantErr *expenses.ErrInvalidTime
-				if errors.As(gotErr, &wantErr) {
-					// optionally can also have `wantErr.ProvidedTime != testCase.wantError.(*expenses.ErrInvalidTime).ProvidedTime`
-					if wantErr.ProvidedTime != testCase.inputModifier {
-						t.Errorf("got error: %v, want error: %v", gotErr, testCase.wantError)
-					}
-
-					// we got other error
-				} else {
-					t.Errorf("got error: %v, want error type: %T", gotErr, testCase.wantError)
-				}
-			}
-
-			// checking the summary
-			if gotSummary != nil {
-				if gotSummary.Total != testCase.wantSummary.Total && gotSummary.SummaryTimeRange != testCase.wantSummary.SummaryTimeRange {
-					t.Errorf("Expense summary does not match. got: %+v, want: %+v", gotSummary, testCase.wantSummary)
 				}
 			}
 		})

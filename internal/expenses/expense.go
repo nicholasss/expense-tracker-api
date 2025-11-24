@@ -12,9 +12,3 @@ type Expense struct {
 	RecordCreatedAt  time.Time // when the record was created
 	Description      string    // what the transaction is
 }
-
-// ExpenseSummary is used when the a summary is requested
-type ExpenseSummary struct {
-	SummaryTimeRange string // what time range
-	Total            int64  // cents total
-}
