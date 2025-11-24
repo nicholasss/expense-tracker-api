@@ -25,8 +25,8 @@ func checkConfigEquality(t *testing.T, got, want *config.Config) {
 	}
 
 	// database
-	if got.DBPath != want.DBPath {
-		t.Errorf("conf.DBPath does not match. got: '%v', want: '%v'", got.DBPath, want.DBPath)
+	if got.DBString != want.DBString {
+		t.Errorf("conf.DBPath does not match. got: '%v', want: '%v'", got.DBString, want.DBString)
 	}
 	if got.DBDriver != want.DBDriver {
 		t.Errorf("conf.DBDriver does not match. got: '%v', want: '%v'", got.DBDriver, want.DBDriver)
@@ -81,7 +81,7 @@ func TestLoadConfig(t *testing.T) {
 				LocalAddress: "localhost",
 				LocalPort:    "8080",
 				Address:      "localhost:8080",
-				DBPath:       "./expense-tracker.db",
+				DBString:     "./expense-tracker.db",
 				DBDriver:     "sqlite3",
 			},
 		},
@@ -103,7 +103,7 @@ func TestLoadConfig(t *testing.T) {
 				LocalAddress: "localhost",
 				LocalPort:    "8080",
 				Address:      "localhost:8080",
-				DBPath:       "./expense-tracker.db",
+				DBString:     "./expense-tracker.db",
 				DBDriver:     "sqlite3",
 			},
 		},
