@@ -10,9 +10,6 @@ import (
 	"github.com/nicholasss/expense-tracker-api/internal/expenses"
 )
 
-// TODO:
-// - How should this package handle teardown of the database?
-
 // QueryError for wrapping sql query errors
 type QueryError struct {
 	Query string
