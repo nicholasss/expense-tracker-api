@@ -3,11 +3,12 @@ package main
 import (
 	"log"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "go.mongodb.org/mongo-driver/v2/mongo"
+	// _ "github.com/mattn/go-sqlite3"
 
 	"github.com/nicholasss/expense-tracker-api/config"
 	"github.com/nicholasss/expense-tracker-api/internal/expenses"
-	"github.com/nicholasss/expense-tracker-api/internal/sqlite"
+	"github.com/nicholasss/expense-tracker-api/internal/mongodb"
 	"github.com/nicholasss/expense-tracker-api/routes"
 )
 
@@ -19,7 +20,12 @@ func main() {
 		log.Fatalf("Failed to load config: %v", err)
 	}
 
-	repository := sqlite.NewSqliteRepository(cfg.DB)
+	// repository := sqlite.NewSqliteRepository(cfg.DB)
+	repository, err := mongodb.NewMongoDBRespository(cfg.MongoDBURI)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	service := expenses.NewService(repository)
 
 	router := routes.SetupGinRoutes(service)

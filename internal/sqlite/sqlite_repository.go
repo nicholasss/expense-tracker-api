@@ -66,8 +66,13 @@ type SqliteRepository struct {
 	db *sql.DB
 }
 
-func NewSqliteRepository(db *sql.DB) *SqliteRepository {
-	return &SqliteRepository{db: db}
+func NewSqliteRepository(dbDriver, database string) (*SqliteRepository, error) {
+	db, err := sql.Open(dbDriver, database)
+	if err != nil {
+		return nil, err
+	}
+
+	return &SqliteRepository{db: db}, nil
 }
 
 // GetByID find a particular expense with an id
