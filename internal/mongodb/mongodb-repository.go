@@ -61,6 +61,8 @@ func NewMongoDBRespository(uri string) (*MongoDBRespository, error) {
 		return nil, err
 	}
 
+	log.Printf("Successfully connected to mongodb at: %v", uri)
+
 	return &MongoDBRespository{Client: client}, nil
 }
 
