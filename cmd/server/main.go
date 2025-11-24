@@ -24,7 +24,7 @@ func main() {
 		log.Fatalf("Failed to load config: %v", err)
 	}
 
-	repository, err := sqlite.NewSqliteRepository(cfg.DBDriver, cfg.DBPath)
+	repository, err := sqlite.NewSqliteRepository(cfg.DBDriver, cfg.DBString)
 	if err != nil {
 		log.Fatalf("Failed to load SQLite3 database: %v", err)
 	}

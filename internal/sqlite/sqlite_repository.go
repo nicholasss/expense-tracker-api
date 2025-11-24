@@ -63,8 +63,8 @@ type SqliteRepository struct {
 	DB *sql.DB
 }
 
-func NewSqliteRepository(dbDriver, database string) (*SqliteRepository, error) {
-	db, err := sql.Open(dbDriver, database)
+func NewSqliteRepository(dbDriver, dbString string) (*SqliteRepository, error) {
+	db, err := sql.Open(dbDriver, dbString)
 	if err != nil {
 		return nil, err
 	}

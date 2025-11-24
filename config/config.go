@@ -21,8 +21,10 @@ type Config struct {
 	Address string
 
 	// Database config
-	DBPath     string
-	DBDriver   string
+	// sqlite
+	DBString string
+	DBDriver string
+	// mongodb
 	MongoDBURI string
 }
 
@@ -35,7 +37,7 @@ func LoadConfig(filePath string) (*Config, error) {
 
 	localAddress := os.Getenv("LOCAL_ADDRESS")
 	localPort := os.Getenv("LOCAL_PORT")
-	dbPath := os.Getenv("DB_PATH")
+	dbPath := os.Getenv("DB_PATH") // aka, database string
 	dbDriver := os.Getenv("GOOSE_DRIVER")
 	mongoDBURI := os.Getenv("MONGODB_URI")
 
@@ -50,7 +52,7 @@ func LoadConfig(filePath string) (*Config, error) {
 		Address:      localAddress + ":" + localPort,
 
 		// database
-		DBPath:     dbPath,
+		DBString:   dbPath,
 		DBDriver:   dbDriver,
 		MongoDBURI: mongoDBURI,
 	}
